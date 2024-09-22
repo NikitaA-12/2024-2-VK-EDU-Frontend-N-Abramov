@@ -4,7 +4,7 @@
  * convertBytesToHuman(-1) === false,
  * convertBytesToHuman(-1) !== '1 B',
  * convertBytesToHuman('string') === false
- * convertBytesToHuman(5) === '5 B'
+ *  convertBytesToHuman(5) === '5 B'
  */
 
 import convertBytesToHuman from './convertBytesToHuman';

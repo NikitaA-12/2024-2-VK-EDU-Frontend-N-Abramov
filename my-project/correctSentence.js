@@ -15,7 +15,7 @@ More examples:
 correctSentence("greetings, friends") == "Greetings, friends."
 correctSentence("Greetings, friends") == "Greetings, friends."
 correctSentence("Greetings, friends.") == "Greetings, friends."
- */
+  */
 
 export default function correctSentence(text) {
   if (!text) return text; // Если строка пустая, просто возвращаем её.
