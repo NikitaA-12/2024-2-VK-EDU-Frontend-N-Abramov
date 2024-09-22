@@ -18,5 +18,20 @@
  */
 
 export default function convertBytesToHuman(bytes) {
-  // your solution goes here
+  if (typeof bytes !== 'number' || bytes < 0 || !Number.isFinite(bytes)) {
+    // проверка типа данных и корректности аргумента
+    return false;
+  }
+
+  const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  let index = 0;
+
+  // Цикл для уменьшения размера и выбора правильной единицы измерения
+  while (bytes >= 1024 && index < units.length - 1) {
+    bytes /= 1024;
+    index++;
+  }
+
+  // Округление до двух знаков после запятой и удаление лишних нулей
+  return `${parseFloat(bytes.toFixed(2))} ${units[index]}`;
 }
