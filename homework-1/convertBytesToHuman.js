@@ -18,7 +18,7 @@
  */
 
 export default function convertBytesToHuman(bytes) {
-  if (typeof bytes !== 'number' || bytes < 0 || !Number.isFinite(bytes)) {
+  if (bytes < 0 || !Number.isFinite(bytes)) {
     // проверка типа данных и корректности аргумента
     return false;
   }

@@ -24,5 +24,22 @@ nonUniqueElements([5, 5, 5, 5, 5]) == [5, 5, 5, 5, 5]
 nonUniqueElements([10, 9, 10, 10, 9, 8]) == [10, 9, 10, 10, 9]
  */
 export default function nonUniqueElements(data) {
+  if (data == null) {
+    // Проверка на null и undefined
+    throw new Error('Input cannot be null or undefined');
+  }
+
+  if (!Array.isArray(data)) {
+    throw new Error('Input must be an array');
+  }
+
+  if (data.length === 0) {
+    return []; // Возвращаем пустой массив, если входной массив пуст
+  }
+
+  if (!data.every((item) => typeof item === 'number')) {
+    throw new Error('All elements in the array must be numbers');
+  }
+
   return data.filter((item) => data.indexOf(item) !== data.lastIndexOf(item));
 }
