@@ -8,7 +8,6 @@
  */
 
 import convertBytesToHuman from './convertBytesToHuman';
-
 test('Возвращает false для неправильного типа данных', () => {
   // Передача отрицательных чисел
   expect(convertBytesToHuman(-1)).toBe(false);

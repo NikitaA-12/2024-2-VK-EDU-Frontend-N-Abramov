@@ -22,7 +22,6 @@ export default function correctSentence(text) {
 
   // Делаем первую букву заглавной.
   text = text[0].toUpperCase() + text.slice(1);
-
   // Если строка не заканчивается точкой, добавляем её.
   if (text[text.length - 1] !== '.') {
     text += '.';

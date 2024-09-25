@@ -24,6 +24,7 @@ export default function convertBytesToHuman(bytes) {
   }
 
   const units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+
   let index = 0;
 
   // Цикл для уменьшения размера и выбора правильной единицы измерения
