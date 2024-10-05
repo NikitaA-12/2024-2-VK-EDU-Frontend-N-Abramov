@@ -1,4 +1,3 @@
-import './index.css';
 const chatInput = document.querySelector('.chat-input textarea');
 const redUserIcon = document.getElementById('red-user');
 const yellowUserIcon = document.getElementById('yellow-user');
