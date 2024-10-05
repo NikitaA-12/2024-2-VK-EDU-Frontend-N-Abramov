@@ -11,7 +11,7 @@ jobs:
           node-version: 16
       - name: Install npm deps
         working-directory: ./simple-chat
-        run: npm i
+        run: npm install # Изменил npm i на npm install для большей ясности
       - name: Build app
         working-directory: ./simple-chat
         run: npm run build
@@ -19,4 +19,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./simple-chat/build
+          publish_dir: ./simple-chat/dist # Измените путь на ./simple-chat/dist
