@@ -5,17 +5,20 @@
     <title>Send a message</title>
     <link rel="stylesheet" href="./index.css" />
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-    <script src="./index.js" defer></script>
+    <!-- Изменено на type="module" -->
+    <script type="module" src="./index.js" defer></script>
   </head>
   <body>
     <div class="simpleChat">
       <header id="chatHeader">
         <div class="user-icon left" id="red-user">
-          <img src="red-user.png" alt="Red User" />
+          <!-- Изменено на ./ для корректного отображения при сборке -->
+          <img src="./red-user.png" alt="Red User" />
         </div>
         <h2 id="username">DEADPOOL</h2>
         <div class="user-icon right" id="yellow-user">
-          <img src="yellow-user.png" alt="Yellow User" />
+          <!-- Изменено на ./ для корректного отображения при сборке -->
+          <img src="./yellow-user.png" alt="Yellow User" />
         </div>
       </header>
       <ul class="chatbox" id="chatbox"></ul>
