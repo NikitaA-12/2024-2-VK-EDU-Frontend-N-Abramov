@@ -1,12 +1,35 @@
 import './index.css';
-const chatInput = document.querySelector('.chat-input textarea');
-const sendChatBtn = document.querySelector('.chat-input span');
-const chatbox = document.querySelector('.chatbox');
 
-let userMessage;
+const chatInput = document.querySelector('.chat-input textarea');
+const redUserIcon = document.getElementById('red-user');
+const yellowUserIcon = document.getElementById('yellow-user');
+const chatbox = document.getElementById('chatbox');
+const sendBtn = document.getElementById('send-btn');
+const messageInput = document.getElementById('messageInput');
+const header = document.getElementById('chatHeader');
+const username = document.getElementById('username');
+let currentColor = 'red'; // По умолчанию — красный пользователь
 const inputInitHeight = chatInput.scrollHeight;
 
-// Функция для форматирования текущего времени (часы и минуты)
+// Загружаем сообщения из localStorage
+let messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+
+// Функция для загрузки сообщений в чат
+const loadMessages = () => {
+  chatbox.innerHTML = ''; // Очищаем старые сообщения
+  messages.forEach(({ text, time, color }) => {
+    const messageElement = document.createElement('li');
+    messageElement.classList.add('chat', color === 'red' ? 'outgoing' : 'incoming');
+
+    const messageParagraph = document.createElement('p');
+    messageParagraph.innerHTML = `${text} <br><span class="message-time">${time}</span>`;
+    messageElement.appendChild(messageParagraph);
+    chatbox.appendChild(messageElement);
+  });
+  chatbox.scrollTop = chatbox.scrollHeight; // Прокручиваем вниз
+};
+
+// Функция для получения текущего времени
 const getCurrentTime = () => {
   const now = new Date();
   const hours = String(now.getHours()).padStart(2, '0');
@@ -14,91 +37,71 @@ const getCurrentTime = () => {
   return `${hours}:${minutes}`;
 };
 
-// Функция для создания элементов сообщений
-const createChatLi = (message, className, time) => {
-  const chatLi = document.createElement('li');
-  chatLi.classList.add('chat', className);
-  let chatContent = `
-    <p>${message} <br><small>${time}</small></p>
-  `;
-  chatLi.innerHTML = chatContent;
-  return chatLi;
-};
+// Функция для отправки сообщения
+const sendMessage = () => {
+  const messageText = messageInput.value.trim();
+  if (messageText) {
+    const currentTime = getCurrentTime();
 
-// Функция для загрузки сообщений из Local Storage
-const loadMessages = () => {
-  const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
+    // Добавляем новое сообщение в массив
+    messages.push({
+      text: messageText,
+      time: currentTime,
+      color: currentColor,
+    });
 
-  // Очищаем чат перед загрузкой сообщений
-  chatbox.innerHTML = '';
+    // Сохраняем обновлённые сообщения в localStorage
+    localStorage.setItem('chatMessages', JSON.stringify(messages));
 
-  // Добавляем каждое сообщение из Local Storage
-  messages.forEach((msg) => {
-    const messageElement = createChatLi(msg.text, msg.type, msg.time);
-    chatbox.appendChild(messageElement);
-  });
+    // Обновляем интерфейс
+    loadMessages();
 
-  // Прокрутка чата вниз
-  chatbox.scrollTo(0, chatbox.scrollHeight);
-};
-
-// Функция для сохранения сообщения в Local Storage
-const saveMessageToLocalStorage = (message, type) => {
-  const messages = JSON.parse(localStorage.getItem('chatMessages')) || [];
-  const time = getCurrentTime(); // Время отправки сообщения (часы и минуты)
-  messages.push({ text: message, type: type, time: time });
-  localStorage.setItem('chatMessages', JSON.stringify(messages));
-};
-
-// Основная функция обработки сообщений
-const handleChat = () => {
-  userMessage = chatInput.value.trim();
-  if (!userMessage) return;
-
-  // Создаём элемент для исходящего сообщения и добавляем в чат
-  const outgoingMessage = createChatLi(userMessage, 'outgoing', getCurrentTime());
-  chatbox.appendChild(outgoingMessage);
-
-  // Сохраняем сообщение в Local Storage
-  saveMessageToLocalStorage(userMessage, 'outgoing');
-
-  // Очищаем поле ввода
-  chatInput.value = '';
-  chatInput.style.height = `${inputInitHeight}px`;
-
-  // Прокручиваем чат вниз
-  chatbox.scrollTo(0, chatbox.scrollHeight);
-
-  // Добавляем имитацию ответа "Thinking..." спустя 600 мс
-  setTimeout(() => {
-    const botResponse = 'Thinking...';
-    const incomingMessage = createChatLi(botResponse, 'incoming', getCurrentTime());
-    chatbox.appendChild(incomingMessage);
-
-    // Сохраняем входящее сообщение в Local Storage
-    saveMessageToLocalStorage(botResponse, 'incoming');
-
-    // Прокручиваем чат вниз
-    chatbox.scrollTo(0, chatbox.scrollHeight);
-  }, 600);
+    // Очищаем поле ввода и сбрасываем его высоту
+    messageInput.value = '';
+    chatInput.style.height = `${inputInitHeight}px`; // Сбрасываем высоту поля ввода
+  }
 };
 
 // Автоматическое изменение высоты текстового поля
 chatInput.addEventListener('input', () => {
-  chatInput.style.height = `${inputInitHeight}px`;
-  chatInput.style.height = `${chatInput.scrollHeight}px`;
+  chatInput.style.height = `${Math.max(inputInitHeight, chatInput.scrollHeight)}px`;
 });
 
-// Обработчик для отправки сообщения по Enter
-chatInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 800) {
+// Добавляем событие на кнопку отправки
+sendBtn.addEventListener('click', sendMessage);
+
+// Обработчик для отправки по Enter
+messageInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    handleChat();
+    sendMessage();
   }
 });
 
-// Обработчик для отправки сообщения по кнопке
-sendChatBtn.addEventListener('click', handleChat);
+// Устанавливаем активного пользователя
+function setActiveUser(color) {
+  currentColor = color;
+  messageInput.focus();
 
-// Загружаем переписку из Local Storage при загрузке страницы
-window.onload = loadMessages;
+  if (color === 'red') {
+    username.textContent = 'DEADPOOL';
+    header.style.backgroundColor = '#B50919';
+  } else {
+    username.textContent = 'WOLVERINE';
+    header.style.backgroundColor = '#FDD710';
+  }
+
+  sendBtn.classList.remove('red', 'yellow');
+  sendBtn.classList.add(color);
+  messageInput.placeholder = 'Введите сообщение';
+}
+
+// Обработчики кликов по иконкам пользователей
+redUserIcon.addEventListener('click', () => setActiveUser('red'));
+yellowUserIcon.addEventListener('click', () => setActiveUser('yellow'));
+
+// Инициализация активного пользователя
+setActiveUser('red');
+
+// Загружаем сообщения при загрузке страницы
+loadMessages();
