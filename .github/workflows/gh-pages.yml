@@ -1,22 +1,25 @@
-name: GitHub Pages
-run-name: ${{ github.actor }} is rolling out a new version of the app 🚀
-on: [push]
+name: Deploy to GitHub Pages
+on:
+  push:
+    branches:
+      - main
 jobs:
-  Build-and-Deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v2
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
         with:
-          node-version: 16
-      - name: Install npm deps
+          node-version: '16'
+      - name: Install dependencies
+        run: npm install
         working-directory: ./simple-chat
-        run: npm i
-      - name: Build app
-        working-directory: ./simple-chat
+      - name: Build
         run: npm run build
-      - name: Deploy
+        working-directory: ./simple-chat
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./simple-chat/build
+          publish_dir: ./simple-chat/dist
