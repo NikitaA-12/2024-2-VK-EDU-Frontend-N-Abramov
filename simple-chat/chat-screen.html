@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Send a message</title>
+    <link rel="stylesheet" href="./index.css" />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <script type="module" src="./index.js" defer></script>
+  </head>
+  <body>
+    <div class="simpleChat">
+      <header id="chatHeader">
+        <div class="back-arrow-container">
+          <span class="material-icons back-arrow" onclick="window.history.back();">arrow_back</span>
+        </div>
+        <div class="user-icon left" id="red-user">
+          <img src="./red-user.png" alt="Red User" />
+        </div>
+        <h2 id="username">DEADPOOL</h2>
+        <div class="user-icon right" id="yellow-user">
+          <img src="./yellow-user.png" alt="Yellow User" />
+        </div>
+      </header>
+
+      <ul class="chatbox" id="chatbox"></ul>
+      <div class="chat-input">
+        <textarea id="messageInput" placeholder="Введите сообщение"></textarea>
+        <button id="send-btn" class="send-btn">
+          <span class="material-icons">send</span>
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

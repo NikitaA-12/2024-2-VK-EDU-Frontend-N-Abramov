@@ -1,0 +1,21 @@
+.floating-button {
+  position: fixed;
+  bottom: 20px; /* Расположение от низа */
+  right: 20px; /* Расположение от правого края */
+  background-color: #007bff; /* Цвет фона кнопки */
+  color: white; /* Цвет текста */
+  border-radius: 50%; /* Круглая форма */
+  width: 56px; /* Ширина кнопки */
+  height: 56px; /* Высота кнопки */
+  display: flex; /* Центрирование содержимого */
+  align-items: center; /* Центрирование содержимого по вертикали */
+  justify-content: center; /* Центрирование содержимого по горизонтали */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Тень для эффекта парения */
+  transition: transform 0.2s; /* Плавный переход */
+  z-index: 1000; /* Поверх других элементов */
+}
+
+.floating-button:hover {
+  transform: scale(1.1); /* Увеличение кнопки при наведении */
+  cursor: pointer; /* Указатель курсора */
+}

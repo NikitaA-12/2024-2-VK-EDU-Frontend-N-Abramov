@@ -1,0 +1,72 @@
+/* Стили для блока чатов */
+.chat-content {
+  display: flex;
+  align-items: center; /* Центрирование элементов по вертикали */
+  padding: 10px 15px;
+  border-bottom: 1px solid #ccc; /* Линия, разделяющая чаты */
+  transition: background-color 0.3s; /* Плавный переход цвета фона */
+}
+
+.chat-content:hover {
+  background-color: #f0f0f0; /* Изменение цвета фона при наведении */
+  cursor: pointer; /* Изменение курсора на pointer */
+}
+
+.user-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-right: 15px; /* Отступ между иконкой и текстом */
+}
+
+.user-icon img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+.chat-details {
+  flex-grow: 1;
+  display: flex; /* Используем flex для выравнивания */
+  align-items: center; /* Центрирование по вертикали */
+}
+
+.username {
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 0; /* Убираем отступ снизу, чтобы избежать смещения */
+}
+
+/* Стили для подвала чата (время и статус) */
+.chat-footer {
+  display: flex;
+  justify-content: flex-end; /* Выравнивание элементов вправо */
+  align-items: center; /* Центрирование по вертикали */
+  gap: 5px; /* Небольшой отступ между временем и иконкой */
+  margin-left: auto; /* Сдвиг подвала чата вправо */
+}
+
+.message-time {
+  font-size: 0.9rem;
+  color: #999;
+  margin-right: 10px; /* Отступ времени от иконки статуса */
+}
+
+.message-status {
+  font-size: 1rem;
+  color: #4caf50; /* Цвет для иконки прочитанного сообщения */
+  margin-right: 10px; /* Отступ индикатора от правого края */
+}
+
+/* Добавляем общий стиль для chat-footer */
+.chat-footer .message-time,
+.chat-footer .message-status {
+  display: flex;
+  align-items: center; /* Центрирование по вертикали */
+}
+
+/* Отступ справа для chat-footer */
+.chat-footer {
+  padding-right: 10px; /* Отступ от правого края */
+}
