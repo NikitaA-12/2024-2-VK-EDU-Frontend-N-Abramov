@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: 'simple-chat', // Укажите папку, в которой находятся ваши HTML-файлы
-  base: './', // Укажите базовый путь для использования при сборке
+  root: '.', // Указываем корень текущей папки
+  base: './', // Указываем базовый путь, который будет использоваться при сборке
   build: {
     rollupOptions: {
       input: {
