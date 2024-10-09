@@ -34,13 +34,6 @@ body {
   position: relative;
 }
 
-.simpleChat header h2 {
-  color: #fff;
-  font-size: 1.4rem;
-  margin: 0 40px;
-  text-align: center;
-}
-
 .simpleChat .user-icon {
   position: absolute;
   width: 75px;
@@ -49,16 +42,6 @@ body {
   border-radius: 50%;
   top: 50%;
   transform: translateY(-50%);
-}
-
-.simpleChat .user-icon.left {
-  left: 10px;
-  border: 4px solid red;
-}
-
-.simpleChat .user-icon.right {
-  right: 10px;
-  border: 4px solid yellow;
 }
 
 .simpleChat .chatbox {
@@ -186,10 +169,61 @@ body {
   color: #fdd710;
 }
 
+/* Стили для времени сообщения */
 .message-time {
-  display: block;
-  text-align: right;
-  font-size: 0.8em;
-  margin-top: 4px;
-  color: gray;
+  font-size: 0.8rem;
+  color: #999;
+  margin-right: 10px;
+}
+
+/* Стили для статуса сообщения (прочитано/доставлено) */
+.message-status .material-icons {
+  font-size: 1rem;
+  color: #4caf50; /* Цвет иконки статуса */
+}
+
+/* Стили для подвала сообщения (время и статус) */
+.message-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 5px;
+}
+
+#chatHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Размещаем элементы по краям */
+  padding: 10px;
+  position: relative;
+}
+
+.back-arrow {
+  font-size: 32px;
+  color: #fff;
+  cursor: pointer;
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.simpleChat .user-icon.left {
+  margin-left: 55px;
+  border: 4px solid red;
+}
+
+.simpleChat .user-icon.right {
+  right: 10px;
+  border: 4px solid yellow;
+}
+
+.simpleChat header h2 {
+  flex-grow: 1; /* Текст займет все доступное пространство */
+  text-align: center; /* Центрируем текст */
+  color: #fff;
+  margin: 0; /* Убираем внешние отступы для точного центрирования */
+  position: absolute; /* Позиционируем относительно контейнера */
+  left: 55%;
+  transform: translateX(-50%); /* Центрируем текст по горизонтали */
 }

@@ -34,8 +34,22 @@ function createMessage(text, user) {
   messageTime.textContent = `${time.getHours()}:${time.getMinutes().toString().padStart(2, '0')}`;
   messageTime.classList.add('message-time');
 
+  // Добавляем иконку статуса сообщения (например, прочитанно или доставлено)
+  const messageStatus = document.createElement('span');
+  messageStatus.classList.add('message-status');
+  const statusIcon = document.createElement('span');
+  statusIcon.classList.add('material-icons');
+  statusIcon.textContent = user ? 'done_all' : 'done'; // Пример: 'done_all' для прочитанного сообщения
+  messageStatus.appendChild(statusIcon);
+
+  // Собираем все в одно сообщение
+  const messageFooter = document.createElement('div');
+  messageFooter.classList.add('message-footer');
+  messageFooter.appendChild(messageTime);
+  messageFooter.appendChild(messageStatus);
+
   message.appendChild(messageText);
-  message.appendChild(messageTime);
+  message.appendChild(messageFooter);
   chatbox.appendChild(message);
 
   // Скролл вниз после отправки сообщения
