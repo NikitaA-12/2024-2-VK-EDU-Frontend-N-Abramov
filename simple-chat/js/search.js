@@ -1,38 +1,42 @@
-document.addEventListener('DOMContentLoaded', function () {
-  const searchIcon = document.getElementById('searchIcon');
-  const searchInput = document.getElementById('searchInput');
+document.addEventListener('DOMContentLoaded', () => {
+  const searchIcon = document.querySelector('.material-symbols-outlined');
+  const searchInput = document.querySelector('#searchInput'); // Поле ввода для поиска
+  const chatBlocks = document.querySelectorAll('.chatlist .block'); // Блоки чатов
 
-  // Обработчик события для клика по иконке поиска
-  searchIcon.addEventListener('click', function () {
-    // Показать поле ввода и скрыть иконку поиска
-    searchInput.style.display = 'block';
-    searchIcon.style.display = 'none';
+  // Функция для переключения видимости иконки и поля ввода
+  function toggleSearch() {
+    searchIcon.classList.add('hide'); // Скрываем иконку
+    searchInput.classList.add('active'); // Отображаем поле ввода
+    searchInput.focus(); // Фокус на поле ввода
+  }
 
-    // Фокусируемся на поле ввода
-    searchInput.focus();
-  });
+  // Функция для обработки ввода в поле поиска
+  function searchChats() {
+    const searchTerm = searchInput.value.toLowerCase(); // Получаем значение поиска
+    chatBlocks.forEach((chatBlock) => {
+      const chatName = chatBlock.querySelector('.listHead h4').innerText.toLowerCase(); // Получаем имя чата
+      // Проверяем, содержит ли имя чата строку поиска
+      chatBlock.style.display = chatName.includes(searchTerm) ? '' : 'none'; // Показываем или скрываем блок чата
+    });
+  }
 
-  // Обработчик события для потери фокуса на поле ввода
-  searchInput.addEventListener('blur', function () {
-    // Скрыть поле ввода и показать иконку поиска
-    searchInput.style.display = 'none';
-    searchIcon.style.display = 'block';
-  });
+  // Обработчик события для клика по иконке
+  searchIcon.addEventListener('click', toggleSearch);
 
-  // Обработчик события для ввода текста в поле поиска
-  searchInput.addEventListener('input', function () {
-    const filter = searchInput.value.toLowerCase();
-    const chatList = document.getElementById('chatList');
-    const chats = chatList.getElementsByClassName('chat');
+  // Обработчик события для ввода текста в поле
+  searchInput.addEventListener('input', searchChats);
 
-    // Перебираем чаты и скрываем/показываем в зависимости от введенного текста
-    for (let i = 0; i < chats.length; i++) {
-      const username = chats[i].querySelector('.username').textContent.toLowerCase();
-      if (username.includes(filter)) {
-        chats[i].style.display = ''; // Показываем чат
-      } else {
-        chats[i].style.display = 'none'; // Скрываем чат
-      }
+  // Обработчик события для потери фокуса поля ввода
+  searchInput.addEventListener('blur', () => {
+    if (searchInput.value === '') {
+      // Проверяем, пустое ли поле
+      searchIcon.classList.remove('hide'); // Показываем иконку
+      searchInput.classList.remove('active'); // Скрываем поле ввода
     }
+  });
+
+  // Обработчик события для фокуса поля ввода
+  searchInput.addEventListener('focus', () => {
+    searchIcon.classList.add('hide'); // Скрываем иконку при фокусе на поле ввода
   });
 });

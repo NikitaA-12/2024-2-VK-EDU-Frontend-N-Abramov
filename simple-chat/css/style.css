@@ -1,0 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Open Sans', sans-serif;
+}
+
+body {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+}
+
+.container {
+  position: relative;
+  width: 340px;
+  height: 600px;
+  background: #fff;
+  box-shadow: 0 5px 5px rgba(0, 0, 0, 0.15);
+}
+
+header {
+  background: #6b7df4;
+  padding: 20px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header .logo {
+  color: #fff;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 1.2em;
+}
+
+header .action {
+  display: flex;
+  gap: 15px;
+  cursor: pointer;
+}
+
+header .action span {
+  color: #fff;
+  font-size: 1.5em;
+}
+
+.content {
+  display: flex;
+  width: 340px;
+}
+
+.content .data {
+  width: 100%;
+  height: 510px;
+}
+
+.message_p {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.message_p b {
+  background: #06d755;
+  color: #fff;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.75em;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #bbb;
+}
+
+.quickBtn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  z-index: 10000;
+}
+
+.quickBtn .createChatButton {
+  background: #6b7df4;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  font-size: 1.5em;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  border: none;
+  transition: color 0.3s, transform 0.3s;
+}
