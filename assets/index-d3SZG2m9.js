@@ -2,7 +2,7 @@
       <div class="imgBx">
         <img 
           id="chatAvatar${t.chatId}" 
-          src="${t.chatId}.png" 
+          src="/${t.chatId}.png" 
           alt="Chat avatar" 
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" 
         />
@@ -22,7 +22,7 @@
           <p>${o}</p>
           ${a}
         </div>
-      </div>`,e.addEventListener("click",()=>D(t)),e}function A(t,e,s){const n=`${t}.png`,o=s.innerHTML.charAt(0).toUpperCase();e.src=n,e.onload=()=>{e.style.display="block",e.nextElementSibling.style.display="none"},e.onerror=()=>{e.style.display="none";const a=e.nextElementSibling;a.style.display="flex",a.innerHTML=o}}function D(t){x.classList.remove("hide"),L.innerHTML="",h=t.chatId,y.innerHTML=`${t.participants[0]} <br /><span>online</span>`;const e=t.participants[0].charAt(0).toUpperCase();A(t.chatId,l,y),l.onerror=()=>{l.nextElementSibling.style.display="flex",l.nextElementSibling.innerHTML=e},t.messages.forEach(s=>{const n=document.createElement("div");s.type==="incoming"?n.classList.add("message","incoming"):s.type==="outgoing"&&n.classList.add("message","outgoing");const o=C(s.time);n.innerHTML=`
+      </div>`,e.addEventListener("click",()=>D(t)),e}function A(t,e,s){const n=`/${t}.png`,o=s.innerHTML.charAt(0).toUpperCase();e.src=n,e.onload=()=>{e.style.display="block",e.nextElementSibling.style.display="none"},e.onerror=()=>{e.style.display="none";const a=e.nextElementSibling;a.style.display="flex",a.innerHTML=o}}function D(t){x.classList.remove("hide"),L.innerHTML="",h=t.chatId,y.innerHTML=`${t.participants[0]} <br /><span>online</span>`;const e=t.participants[0].charAt(0).toUpperCase();A(t.chatId,l,y),l.onerror=()=>{l.nextElementSibling.style.display="flex",l.nextElementSibling.innerHTML=e},t.messages.forEach(s=>{const n=document.createElement("div");s.type==="incoming"?n.classList.add("message","incoming"):s.type==="outgoing"&&n.classList.add("message","outgoing");const o=C(s.time);n.innerHTML=`
       <p>${s.content}</p>
       <div class="message-footer">
         <span class="time">${o}</span>
