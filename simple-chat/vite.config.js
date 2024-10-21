@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  root: '.',
-  base: '/2024-2-VK-EDU-Frontend-N-Abramov/',
+  root: '.', // Корень проекта
+  base: './', // Базовый путь для сборки
   build: {
-    assetsDir: 'assets', // Сохранение изображений в папке assets
+    assetsDir: '', // Убираем вложение ресурсов в отдельную папку, чтобы картинки сохранялись в корне
     rollupOptions: {
       output: {
-        assetFileNames: '[name].[ext]', // Оставляем оригинальные имена файлов
+        assetFileNames: '[name].[ext]', // Сохраняем изображения с их оригинальными именами и расширениями в корень
       },
     },
   },
