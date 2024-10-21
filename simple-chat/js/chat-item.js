@@ -27,7 +27,7 @@ export function createChatItem(chat) {
       <div class="imgBx">
         <img 
           id="chatAvatar${chat.chatId}" 
-          src="./${chat.chatId}.png" 
+          src="/${chat.chatId}.png" 
           alt="Chat avatar" 
           onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" 
         />
@@ -55,7 +55,7 @@ export function createChatItem(chat) {
 }
 
 export function setChatAvatar(chatId, avatarElement, nameElement) {
-  const chatAvatarSrc = `./${chatId}.png`;
+  const chatAvatarSrc = `/${chatId}.png`;
   const firstLetter = nameElement.innerHTML.charAt(0).toUpperCase();
 
   avatarElement.src = chatAvatarSrc;
