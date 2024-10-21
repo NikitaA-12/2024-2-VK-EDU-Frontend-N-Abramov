@@ -1,5 +1,5 @@
-import { createChatItem } from './js/chat-item.js';
-import { chatData, loadChatsFromLocalStorage, saveChatsToLocalStorage } from './js/chat-data.js';
+import { createChatItem } from './chat-item.js';
+import { chatData, loadChatsFromLocalStorage, saveChatsToLocalStorage } from './chat-data.js';
 // Функция для сортировки чатов по времени последнего сообщения
 function sortChatsByLastMessage() {
   chatData.chats.sort((a, b) => {
