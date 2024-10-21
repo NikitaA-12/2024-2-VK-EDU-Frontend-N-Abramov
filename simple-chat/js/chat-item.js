@@ -1,4 +1,3 @@
-import avatar from './2.png';
 const chatBox = document.querySelector('.chatBox'); // Контейнер для сообщений
 const chatHeaderImg = document.querySelector('#chatAvatar'); // Элемент для аватарки в заголовке чата
 const chatHeaderName = document.querySelector('#chatName'); // Элемент для имени участника в заголовке чата
