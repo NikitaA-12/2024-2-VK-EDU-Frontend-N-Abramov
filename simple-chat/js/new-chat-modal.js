@@ -3,12 +3,25 @@ import { chatData, saveChatsToLocalStorage } from './chat-data.js';
 const chatNameInput = document.getElementById('chatNameInput'); // Поле ввода названия чата
 const createChatButton = document.getElementById('createChatButton'); // Кнопка создания чата
 const modal = document.getElementById('chatModal'); // Модальное окно
+const modalClose = document.getElementById('modalClose');
+
+// Функция для экранирования HTML-символов (защита от XSS)
+function escapeHTML(input) {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 // Функция для добавления нового чата
 function addNewChat() {
-  const chatName = chatNameInput.value.trim(); // Получаем название чата
+  let chatName = chatNameInput.value.trim(); // Получаем название чата
 
   if (chatName !== '') {
+    chatName = escapeHTML(chatName); // Экранируем HTML-сущности
+
     const currentTime = new Date(); // Получаем текущее время
     const moscowTime = new Intl.DateTimeFormat('ru-RU', {
       timeZone: 'Europe/Moscow',
@@ -18,8 +31,8 @@ function addNewChat() {
 
     const newChat = {
       chatId: chatData.chats.length + 1, // Новый уникальный ID
-      participants: [chatName, 'right'],
-      messages: [],
+      participants: [chatName, 'right'], // Участники чата
+      messages: [], // Пустой список сообщений
     };
 
     chatData.chats.unshift(newChat); // Добавляем новый чат в начало массива
@@ -33,8 +46,6 @@ function addNewChat() {
 
 // Привязка кнопки "Создать чат" к функции добавления нового чата
 createChatButton.addEventListener('click', addNewChat);
-
-const modalClose = document.getElementById('modalClose');
 
 // Функция для открытия модального окна
 function openModal() {
@@ -50,4 +61,5 @@ function closeModal() {
 // Добавить обработчик события на кнопку закрытия
 modalClose.addEventListener('click', closeModal);
 
+// Добавляем обработчик события для открытия модального окна
 document.getElementById('openModalButton').addEventListener('click', openModal);
