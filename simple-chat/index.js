@@ -35,9 +35,28 @@ export function displayChats() {
     button.addEventListener('click', (event) => {
       event.stopPropagation(); // Останавливаем всплытие события, чтобы не открывать чат
       const chatIdToDelete = parseInt(button.getAttribute('data-chat-id'));
-      deleteChat(chatIdToDelete); // Удаляем чат
+      animateChatDeletion(chatIdToDelete); // Запускаем анимацию удаления чата
     });
   });
+}
+
+// Функция для запуска анимации удаления чата
+function animateChatDeletion(chatId) {
+  const chatElement = document.querySelector(`[data-chat-id="${chatId}"]`); // Находим элемент чата по data-атрибуту
+
+  if (chatElement) {
+    const blockElement = chatElement.closest('.block'); // Находим родительский элемент с классом 'block'
+
+    if (blockElement) {
+      // Добавляем класс для анимации удаления
+      blockElement.classList.add('removing');
+
+      // Ждем завершения анимации перед удалением элемента
+      blockElement.addEventListener('animationend', () => {
+        deleteChat(chatId); // Удаляем чат после завершения анимации
+      });
+    }
+  }
 }
 
 // Функция для удаления чата
