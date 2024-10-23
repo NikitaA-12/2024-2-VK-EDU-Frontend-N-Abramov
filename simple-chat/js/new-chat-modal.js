@@ -1,9 +1,10 @@
-import { displayChats } from './index.js';
+import { displayChats } from '../index.js';
+import { createChatItem } from './chat-item.js';
 import { chatData, saveChatsToLocalStorage } from './chat-data.js';
 const chatNameInput = document.getElementById('chatNameInput'); // Поле ввода названия чата
 const createChatButton = document.getElementById('createChatButton'); // Кнопка создания чата
 const modal = document.getElementById('chatModal'); // Модальное окно
-
+const chatList = document.querySelector('.chatlist'); // Элемент, в который добавляются новые чаты
 // Функция для добавления нового чата
 function addNewChat() {
   let chatName = chatNameInput.value.trim(); // Получаем название чата
@@ -26,9 +27,17 @@ function addNewChat() {
     chatData.chats.unshift(newChat); // Добавляем новый чат в начало массива
     saveChatsToLocalStorage(); // Сохраняем изменения в localStorage
 
-    chatNameInput.value = ''; // Очищаем поле ввода
-    displayChats(); // Обновляем список чатов
-    closeModal(); // Закрываем модальное окно
+    const newChatItem = createChatItem(newChat); // Создаём DOM элемент для нового чата
+    newChatItem.classList.add('chat-animate'); // Добавляем класс для анимации только новому чату
+
+    chatList.prepend(newChatItem); // Добавляем новый чат в начало списка
+
+    // Запускаем анимацию, а затем вызываем displayChats
+    setTimeout(() => {
+      newChatItem.classList.remove('chat-animate'); // Убираем класс анимации
+      displayChats(); // Обновляем отображение списка чатов
+      closeModal(); // Закрываем модальное окно
+    }, 500); // Время задержки должно совпадать с длительностью анимации
   }
 }
 

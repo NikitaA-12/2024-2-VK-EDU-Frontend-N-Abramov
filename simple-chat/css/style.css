@@ -111,4 +111,10 @@ header .action span {
   cursor: pointer;
   border: none;
   transition: color 0.3s, transform 0.3s;
+  transition: transform 0.3s ease; /* Плавный переход */
+}
+
+.quickBtn .createChatButton:hover {
+  background-color: #566cff;
+  transform: scale(1.1); /* Увеличение до 110% при наведении */
 }

@@ -30,7 +30,7 @@ function sendMessage() {
 
         // Отображаем новое сообщение в интерфейсе
         const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', 'outgoing');
+        messageDiv.classList.add('message', 'outgoing', 'bubble-animation'); // Добавляем класс анимации
         const formattedTime = new Date(newMessage.time).toLocaleTimeString([], {
           hour: '2-digit',
           minute: '2-digit',
@@ -44,6 +44,10 @@ function sendMessage() {
         // Очищаем поле ввода
         messageInput.value = '';
         saveChatsToLocalStorage(); // Сохраняем изменения
+        // Удаляем класс анимации через 500 миллисекунд, чтобы она не повторялась
+        setTimeout(() => {
+          messageDiv.classList.remove('bubble-animation');
+        }, 500);
       }
     }
   }
