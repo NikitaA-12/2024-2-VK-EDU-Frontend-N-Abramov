@@ -38,6 +38,22 @@ export function displayChats() {
       animateChatDeletion(chatIdToDelete); // Запускаем анимацию удаления чата
     });
   });
+
+  // Добавляем обработчик события для блоков чатов
+  const chatBlocks = document.querySelectorAll('.block');
+  chatBlocks.forEach((block) => {
+    block.addEventListener('click', (event) => {
+      // Проверяем, не произошло ли событие на кнопке удаления
+      const target = event.target;
+      if (!target.classList.contains('delete-chat')) {
+        openChat(
+          chatData.chats.find(
+            (chat) => chat.chatId === parseInt(block.getAttribute('data-chat-id')),
+          ),
+        );
+      }
+    });
+  });
 }
 
 // Функция для запуска анимации удаления чата

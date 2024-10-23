@@ -1,3 +1,4 @@
+import { displayChats } from '../index.js';
 import { createChatItem } from './chat-item.js';
 import { chatData, saveChatsToLocalStorage } from './chat-data.js';
 const chatNameInput = document.getElementById('chatNameInput'); // Поле ввода названия чата
@@ -35,7 +36,7 @@ function addNewChat() {
     setTimeout(() => {
       newChatItem.classList.remove('chat-animate');
     }, 500); // Длительность должна совпадать с временем анимации
-
+    displayChats(); // Инициализируем отображение списка чатов
     closeModal(); // Закрываем модальное окно
   }
 }
