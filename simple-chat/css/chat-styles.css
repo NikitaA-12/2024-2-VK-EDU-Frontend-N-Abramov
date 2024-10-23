@@ -163,13 +163,36 @@
   animation: bubbleUp 0.4s ease forwards;
 }
 
-#toggleAlignment {
-  transition: transform 0.2s ease;
+/* Применение анимации к новому сообщению */
+.message.bubble-animation {
+  animation: bubbleUp 0.4s ease forwards;
 }
 
-/* Эффект увеличения при наведении */
+/* Определяем анимацию "пульс" */
+@keyframes pulse {
+  0% {
+    transform: scale(1); /* Исходный размер */
+  }
+  50% {
+    transform: scale(1.1); /* Увеличение на 10% */
+  }
+  100% {
+    transform: scale(1); /* Возвращение к исходному размеру */
+  }
+}
+
+/* Стили кнопки смены пользователя */
+#toggleAlignment {
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* Анимация при наведении */
 #toggleAlignment:hover {
-  transform: scale(1.1);
+  animation: pulse 0.8s ease-in-out infinite; /* Анимация пульсации */
 }
 
 #createChatButton,
