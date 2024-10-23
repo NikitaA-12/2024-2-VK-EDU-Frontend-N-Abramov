@@ -1,0 +1,147 @@
+.chatBox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #dadefd;
+  z-index: 10000;
+}
+
+.chatBox.hide {
+  display: none;
+}
+
+.chatBox::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #6b7df4;
+  opacity: 0.05;
+}
+
+.chat_header {
+  position: relative;
+  width: 100%;
+  padding: 10px;
+  background: #6b7df4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat_header .imgcontent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 5px;
+  width: 100%;
+}
+
+.chat_header .imgcontent .imgBx {
+  position: relative;
+  width: 45px;
+  height: 45px;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.chat_header .imgcontent .imgBx img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chat_header .imgcontent h3 {
+  font-size: 1em;
+  color: #fff;
+  font-weight: 500;
+  line-height: 1.1em;
+  flex-grow: 1;
+
+  margin-right: 5px;
+  max-width: calc(100% - 55px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat_header .imgcontent h3 span {
+  font-size: 0.7em;
+  font-weight: 400;
+}
+
+.chat_header .imgcontent .material-symbols-outlined {
+  margin-left: auto;
+  color: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.time {
+  position: relative;
+  display: block;
+  font-size: 0.7em;
+  width: 100%;
+  text-align: end;
+  color: #555;
+}
+
+.message.outgoing .time {
+  text-align: right;
+}
+
+.message.incoming .time {
+  text-align: left;
+}
+
+.chat_header .imgcontent .back-arrow {
+  color: #fff;
+  cursor: pointer;
+  font-size: 1.25em;
+}
+
+.messageBox {
+  padding: 10px;
+  max-height: 485px;
+  overflow-y: auto;
+  margin-bottom: 60px;
+  position: relative;
+}
+
+.message {
+  max-width: 80%;
+  margin: 5px;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #e0e0e0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message p {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+}
+
+.message.incoming {
+  text-align: left;
+  background-color: #ff9c9c;
+  margin-right: auto;
+  margin-left: 0;
+}
+
+.message.outgoing {
+  text-align: right;
+  background-color: #3da1fe;
+  margin-left: auto;
+  margin-right: 0;
+}
