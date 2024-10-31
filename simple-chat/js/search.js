@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const searchIcon = document.querySelector('.material-symbols-outlined');
   const searchInput = document.querySelector('#searchInput'); // Поле ввода для поиска
-  const chatBlocks = document.querySelectorAll('.chatlist .block'); // Блоки чатов
 
   // Функция для переключения видимости иконки и поля ввода
   function toggleSearch() {
@@ -13,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Функция для обработки ввода в поле поиска
   function searchChats() {
     const searchTerm = searchInput.value.toLowerCase(); // Получаем значение поиска
+    const chatBlocks = document.querySelectorAll('.chatlist .block'); // Обновляем список блоков чатов
     chatBlocks.forEach((chatBlock) => {
       const chatName = chatBlock.querySelector('.listHead h4').innerText.toLowerCase(); // Получаем имя чата
       // Проверяем, содержит ли имя чата строку поиска
