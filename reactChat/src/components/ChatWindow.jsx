@@ -139,6 +139,32 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
               <span className={`time ${msg.type}`}>
                 {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
+              <span className="checkmarks">
+                {msg.read ? (
+                  <svg
+                    className="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall read css-120dh41-MuiSvgIcon-root"
+                    focusable="false"
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    data-testid="DoneAllIcon">
+                    <path
+                      d="m18 7-1.41-1.41-6.34 6.34 1.41 1.41zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12zM.41 13.41 6 19l1.41-1.41L1.83 12z"
+                      className="checkmark"></path>
+                  </svg>
+                ) : (
+                  <svg
+                    className="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall read css-120dh41-MuiSvgIcon-root"
+                    focusable="false"
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    data-testid="DoneIcon">
+                    <path
+                      d="M9 16.17L4.83 12 3.41 13.41 9 19l12-12-1.41-1.41z"
+                      className="checkmark"
+                    />
+                  </svg>
+                )}
+              </span>
             </div>
           </div>
         ))}
