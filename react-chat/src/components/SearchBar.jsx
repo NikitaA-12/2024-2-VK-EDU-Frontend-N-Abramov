@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import SearchIcon from '@mui/icons-material/Search';
-import '../styles/SearchBar.css';
 
 const SearchBar = ({ searchTerm, setSearchTerm }) => {
   const [isActive, setIsActive] = useState(false);
