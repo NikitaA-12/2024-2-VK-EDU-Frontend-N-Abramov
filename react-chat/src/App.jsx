@@ -6,13 +6,13 @@ import ChatWindow from './components/ChatWindow.jsx';
 import Modal from './components/Modal.jsx';
 
 import './styles/style.css';
-import './styles/ChatList.css';
+import './styles/chat-list.css';
 import './styles/message-input.css';
 import './styles/chat-styles.css';
 import './styles/modal.css';
-import './styles/searchBar.css';
+import './styles/search-bar.css';
 import './styles/delete-button.css';
-import './styles/ChatItem.css';
+import './styles/chat-item.css';
 
 function App() {
   const [activeChat, setActiveChat] = useState(null);
