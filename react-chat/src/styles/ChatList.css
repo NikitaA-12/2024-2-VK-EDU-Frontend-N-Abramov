@@ -1,0 +1,66 @@
+.chatlist {
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  overflow-y: auto;
+  max-height: 500px;
+  flex-wrap: nowrap;
+}
+
+.block {
+  display: flex;
+
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+  transition: background-color 0.3s;
+}
+
+.block:hover {
+  background-color: #f4f8ff;
+}
+
+.imgBx {
+  margin-right: 10px; /* Отступ между аватаркой и текстом */
+}
+
+.details {
+  flex: 1;
+}
+
+.chatAvatar {
+  position: relative;
+  width: 45px;
+  height: 45px;
+  overflow: hidden;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fadeIn {
+  animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+.fadeOut {
+  animation: fadeOut 0.3s ease-in-out forwards;
+}

@@ -4,7 +4,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: #dadefd;
+  background: #f4f8ff;
   z-index: 10000;
 }
 
@@ -36,17 +36,22 @@
 .chat_header .imgcontent {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 5px;
+
   width: 100%;
+  padding-left: 5px;
 }
 
 .chat_header .imgcontent .imgBx {
   position: relative;
-  width: 45px;
-  height: 45px;
-  overflow: hidden;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
+  background-color: #8f9efe;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fafafa;
+  font-size: 24px;
 }
 
 .chat_header .imgcontent .imgBx img {
@@ -56,6 +61,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
 }
 
 .chat_header .imgcontent h3 {
@@ -64,7 +70,6 @@
   font-weight: 500;
   line-height: 1.1em;
   flex-grow: 1;
-
   margin-right: 5px;
   max-width: calc(100% - 55px);
   overflow: hidden;
@@ -77,6 +82,12 @@
   font-weight: 400;
 }
 
+.chat_header .imgcontent .status {
+  font-size: 0.7em;
+  font-weight: 400;
+  color: rgb(255, 255, 255); /* Цвет текста для статуса online */
+}
+
 .chat_header .imgcontent .material-symbols-outlined {
   margin-left: auto;
   color: #fff;
@@ -85,11 +96,9 @@
 }
 
 .time {
-  position: relative;
   display: block;
   font-size: 0.7em;
   width: 100%;
-  text-align: end;
   color: #555;
 }
 
@@ -101,10 +110,13 @@
   text-align: left;
 }
 
-.chat_header .imgcontent .back-arrow {
-  color: #fff;
-  cursor: pointer;
+.back-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.25em;
+  height: 100%;
+  color: #ffffff;
 }
 
 .messageBox {
@@ -134,36 +146,28 @@
 
 .message.incoming {
   text-align: left;
-  background-color: #ff9c9c;
+  background-color: #ffaaaa;
   margin-right: auto;
-  margin-left: 0;
 }
 
 .message.outgoing {
   text-align: right;
-  background-color: #3da1fe;
+  background-color: #9bcfff;
   margin-left: auto;
-  margin-right: 0;
 }
 
 /* Анимация надувания */
 @keyframes bubbleUp {
   0% {
-    transform: scale(0.5); /* Исходный размер - уменьшенный */
-    opacity: 0; /* Прозрачное начало */
+    transform: scale(0.5);
+    opacity: 0;
   }
   100% {
-    transform: scale(1); /* Полный размер */
-    opacity: 1; /* Полная видимость */
+    transform: scale(1);
+    opacity: 1;
   }
 }
 
-/* Применение анимации к новому сообщению */
-.message.bubble-animation {
-  animation: bubbleUp 0.4s ease forwards;
-}
-
-/* Применение анимации к новому сообщению */
 .message.bubble-animation {
   animation: bubbleUp 0.4s ease forwards;
 }
@@ -171,26 +175,27 @@
 /* Определяем анимацию "пульс" */
 @keyframes pulse {
   0% {
-    transform: scale(1); /* Исходный размер */
+    transform: scale(1);
   }
   50% {
-    transform: scale(1.1); /* Увеличение на 10% */
+    transform: scale(1.1);
   }
   100% {
-    transform: scale(1); /* Возвращение к исходному размеру */
+    transform: scale(1);
   }
 }
 
 /* Стили кнопки смены пользователя */
 #toggleAlignment {
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25em;
+  height: 100%;
+  color: #ffffff;
   cursor: pointer;
 }
 
-/* Анимация при наведении */
 #toggleAlignment:hover {
   animation: pulse 0.8s ease-in-out infinite; /* Анимация пульсации */
 }
@@ -203,4 +208,30 @@
 #createChatButton:hover,
 #back:hover {
   transform: scale(1.2);
+}
+
+.imgcontent {
+  display: flex;
+  align-items: center;
+}
+
+.imgBx {
+  display: flex;
+  align-items: center; /* Центрирует аватар */
+  margin-right: 10px; /* Отступ между аватаром и именем */
+}
+
+#chatName {
+  overflow: hidden; /* Скрываем переполнение */
+  text-overflow: ellipsis; /* Добавляем многоточие для длинных строк */
+  white-space: nowrap; /* Запрещаем перенос строк */
+  margin: 0;
+  max-width: 190px;
+  display: 'flex';
+  justify-content: 'space-between';
+  align-items: 'center';
+}
+
+.checkmark {
+  fill: rgb(255, 255, 255);
 }

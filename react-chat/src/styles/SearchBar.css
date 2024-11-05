@@ -1,5 +1,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800;900&display=swap');
 
+.search-container {
+  display: flex;
+  align-items: center;
+  color: #ffffff;
+}
+
 #searchInput {
   display: none;
   width: 0;
@@ -20,7 +26,7 @@
   margin-left: 10px;
 }
 
-.material-symbols-outlined.hide {
+#searchIcon.hide {
   display: none;
 }
 
@@ -29,13 +35,11 @@
   border-color: #007bff;
 }
 
-/* Стандартное состояние иконки поиска */
 #searchIcon {
-  transition: transform 0.2s ease; /* Плавное увеличение */
-  cursor: pointer; /* Указатель при наведении */
+  transition: transform 0.2s ease;
+  cursor: pointer;
 }
 
-/* Увеличение иконки при наведении */
 #searchIcon:hover {
-  transform: scale(1.2); /* Увеличение на 20% */
+  transform: scale(1.2);
 }

@@ -1,0 +1,70 @@
+.imgBx {
+  position: relative; /* Для позиционирования аватарки */
+}
+
+.avatarLetter {
+  display: none; /* Скрываем букву по умолчанию */
+  justify-content: center;
+  align-items: center;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #8f9efe;
+}
+
+.details {
+  flex: 1; /* Занимает оставшееся пространство */
+}
+
+.listHead {
+  display: flex;
+  width: 100px;
+  justify-content: space-between; /* Выровнено по краям */
+  align-items: center;
+}
+
+.message_p {
+  display: flex;
+  align-items: center;
+  width: 260px;
+  overflow: hidden;
+}
+
+.message_p p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+  width: 200px;
+  display: 'flex';
+  justify-content: 'space-between';
+  align-items: 'center';
+}
+
+.read {
+  color: #6b7df4;
+  margin-left: auto;
+}
+
+.time-delete-wrapper {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  margin-left: 20px;
+}
+
+.listHead h4 {
+  max-width: 190px; /* Максимальная ширина заголовка */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0;
+}
+
+.listHead {
+  display: flex;
+  width: 260px;
+  justify-content: space-between;
+  align-items: center;
+}
