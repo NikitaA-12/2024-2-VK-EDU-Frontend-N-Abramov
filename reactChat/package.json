@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://github.com/NikitaA-12/2024-2-VK-EDU-Frontend-N-Abramov/tree/vk-frontend-hw-5",
+  "homepage": "https://github.com/NikitaA-12/2024-2-VK-EDU-Frontend-N-Abramov",
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
