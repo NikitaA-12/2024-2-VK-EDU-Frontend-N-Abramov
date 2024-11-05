@@ -234,6 +234,6 @@
 
 .checkmark {
   fill: rgb(255, 255, 255);
-  width: 24px; /* Задайте желаемую ширину */
-  height: 24px; /* Задайте желаемую высоту */
+  width: 24px;
+  height: 24px;
 }
