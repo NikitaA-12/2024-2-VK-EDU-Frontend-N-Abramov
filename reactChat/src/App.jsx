@@ -4,22 +4,22 @@ import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
 import Modal from './components/Modal.jsx';
+import avatar1 from './assets/1.png';
+import avatar2 from './assets/2.png';
 
-import './styles/style.css';
-import './styles/chat-list.css';
-import './styles/message-input.css';
-import './styles/chat-styles.css';
-import './styles/modal.css';
-import './styles/search-bar.css';
-import './styles/delete-button.css';
-import './styles/chat-item.css';
+const avatars = {
+  1: avatar1,
+  2: avatar2,
+};
+
+import './index.scss';
 
 function App() {
   const [activeChat, setActiveChat] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [chatAvatar, setChatAvatar] = useState('');
+  const [chatAvatar, setChatAvatar] = useState(null);
 
   useEffect(() => {
     const storedChats = JSON.parse(localStorage.getItem('chats'));
@@ -93,17 +93,23 @@ function App() {
     if (chat) {
       setActiveChat(chat);
       console.log('Выбранный чат:', chat);
-      const avatarPath = `/${chat.chatId}.png`;
-      setChatAvatar(checkImageExists(avatarPath));
+      const avatarPath = avatars[chat.chatId];
+
+      if (avatarPath && checkImageExists(avatarPath)) {
+        setChatAvatar(avatarPath);
+      } else {
+        setChatAvatar(null);
+      }
     } else {
       console.error('Selected chat is undefined.');
     }
   };
 
   const checkImageExists = (src) => {
+    if (!src) return false;
     const img = new Image();
     img.src = src;
-    return img.complete ? src : '';
+    return img.complete;
   };
 
   return (
@@ -116,7 +122,6 @@ function App() {
           </button>
         </div>
         <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />{' '}
-        {/* Передача searchTerm */}
       </div>
 
       {activeChat ? (

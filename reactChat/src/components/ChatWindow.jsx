@@ -3,27 +3,24 @@ import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
-import '../styles/chat-styles.css';
-import '../styles/message-input.css';
 
 const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
-  // Инициализация состояния
   const [messages, setMessages] = useState(activeChat ? activeChat.messages : []);
   const [alignment, setAlignment] = useState('right');
   const [newMessageIndexes, setNewMessageIndexes] = useState([]);
   const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Загрузка сообщений из локального хранилища при изменении activeChat
+  // Загрузка сообщений из локального хранилища
   useEffect(() => {
     if (activeChat) {
-      const storedChats = JSON.parse(localStorage.getItem('chats'));
-      if (storedChats) {
-        const currentChat = storedChats.chats.find((chat) => chat.chatId === activeChat.chatId);
-        if (currentChat) {
-          setMessages(currentChat.messages.map((msg) => ({ ...msg, read: true }))); // Все сообщения помечаем как прочитанные при загрузке
-        }
+      const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
+      const currentChat = storedChats.chats.find((chat) => chat.chatId === activeChat.chatId);
+      if (currentChat) {
+        setMessages(currentChat.messages.map((msg) => ({ ...msg, read: true })));
       }
+    } else {
+      setMessages([]); // Сбрасываем сообщения, если activeChat не выбран
     }
   }, [activeChat]);
 
@@ -34,9 +31,10 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     }
   }, [messages]);
 
+  // Сохранение чатов в локальное хранилище
   const saveChatsToLocalStorage = (updatedChat) => {
-    const storedChats = JSON.parse(localStorage.getItem('chats')) || { chats: [] };
-    const chatIndex = storedChats.chats.findIndex((chat) => chat.chatId === activeChat.chatId);
+    const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
+    const chatIndex = storedChats.chats.findIndex((chat) => chat.chatId === updatedChat.chatId);
     if (chatIndex !== -1) {
       storedChats.chats[chatIndex] = updatedChat;
     } else {
@@ -46,16 +44,14 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   };
 
   const handleSendMessage = () => {
-    const messageInput = messageInputRef.current; // Используем ref для доступа к элементу
-    const message = messageInput.value.trim();
-
+    const message = messageInputRef.current?.value.trim();
     if (message) {
       const newMessage = {
         type: 'outgoing',
         from: alignment,
         content: message,
         time: new Date().toISOString(),
-        read: false, // Новое сообщение еще не прочитано
+        read: false,
       };
 
       const updatedMessages = [...messages, newMessage];
@@ -68,10 +64,10 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
       };
 
       saveChatsToLocalStorage(updatedChat);
-      messageInput.value = '';
+      messageInputRef.current.value = '';
       adjustTextareaHeight();
 
-      // Удаляем индекс нового сообщения через 1 секунду
+      // Удаление индекса нового сообщения через 1 секунду
       setTimeout(() => {
         setNewMessageIndexes((prev) =>
           prev.filter((index) => index !== updatedMessages.length - 1),
@@ -98,7 +94,6 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     }
   };
 
-  // Проверяем, есть ли активный чат, перед выводом
   if (!activeChat) {
     return <div className="chatBox hide">Select a chat to start messaging</div>;
   }
@@ -198,7 +193,7 @@ ChatWindow.propTypes = {
         from: PropTypes.string.isRequired,
         content: PropTypes.string.isRequired,
         time: PropTypes.string.isRequired,
-        read: PropTypes.bool.isRequired, // Поле для статуса прочтения
+        read: PropTypes.bool.isRequired,
       }),
     ).isRequired,
   }).isRequired,
