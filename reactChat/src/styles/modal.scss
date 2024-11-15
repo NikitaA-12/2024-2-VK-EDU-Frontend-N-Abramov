@@ -1,5 +1,5 @@
 .modal {
-  display: none;
+  display: flex;
   position: fixed;
   z-index: 10000;
   left: 0;
@@ -10,10 +10,6 @@
   background-color: rgba(0, 0, 0, 0.5);
   justify-content: center;
   align-items: center;
-}
-
-.modal.active {
-  display: flex;
 }
 
 .modal-content {
@@ -62,14 +58,8 @@
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
-  transition: transform 0.3s ease; /* Плавный переход */
 }
 
 #createChatButton:hover {
   background-color: #566cff;
-  transform: scale(1.1); /* Увеличение до 110% при наведении */
-}
-
-.hide {
-  display: none;
 }
