@@ -37,30 +37,36 @@
   object-fit: cover;
 }
 
+/* Анимация появления с плавным подъёмом */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px); /* Элемент поднимается с нижней позиции */
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0); /* Элемент возвращается в исходное положение */
   }
 }
+
+/* Класс для применения анимации появления */
 .fadeIn {
-  animation: fadeIn 0.3s ease-in-out forwards;
+  animation: fadeIn 0.5s ease-in-out forwards;
 }
 
+/* Анимация исчезновения с плавным отъездом */
 @keyframes fadeOut {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0); /* Элемент в нормальном положении */
   }
   to {
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateY(-10px); /* Элемент уходит вверх */
   }
 }
+
+/* Класс для применения анимации исчезновения */
 .fadeOut {
   animation: fadeOut 0.3s ease-in-out forwards;
 }

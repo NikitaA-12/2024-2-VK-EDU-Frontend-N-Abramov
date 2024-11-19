@@ -1,5 +1,3 @@
-import { useEffect, useState } from 'react';
-
 // Определяем начальные данные чатов
 export const initialChatData = {
   chats: [
@@ -61,24 +59,3 @@ export const initialChatData = {
     },
   ],
 };
-
-// Основной компонент для работы с чатами
-export function useChatData() {
-  const [chatData, setChatData] = useState(() => {
-    const savedChatData = localStorage.getItem('chats');
-    const parsedData = savedChatData ? JSON.parse(savedChatData) : null;
-
-    // Проверяем, является ли parsedData объектом и содержит ли ключ chats
-    return parsedData && Array.isArray(parsedData.chats) ? parsedData : initialChatData; // Возвращаем начальные данные, если формат неправильный
-  });
-
-  // Сохраняем данные чатов в localStorage при каждом обновлении
-  useEffect(() => {
-    localStorage.setItem('chats', JSON.stringify(chatData));
-  }, [chatData]);
-
-  return {
-    chatData,
-    setChatData, // Обеспечиваем возможность изменять данные чатов
-  };
-}

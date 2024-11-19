@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -16,9 +16,10 @@ const formatTime = (isoString) => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
-const ChatItem = ({ chat, onChatClick, onDelete, isNew }) => {
+const ChatItem = ({ chat, onChatClick, onDelete, isNew = false }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
   const firstLetter = chat.participants[0].charAt(0).toUpperCase();
   const lastMessageTime = chat.messages.length
     ? formatTime(chat.messages[chat.messages.length - 1].time)
@@ -29,19 +30,27 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew }) => {
 
   const avatarSrc = avatars[chat.chatId];
 
+  // Обработчик ошибок загрузки аватара
+  const handleAvatarError = useCallback(
+    (e) => {
+      console.warn(`Ошибка загрузки аватара для chatId: ${chat.chatId}`);
+      e.target.style.display = 'none'; // Скрыть изображение при ошибке загрузки
+    },
+    [chat.chatId],
+  );
+
   useEffect(() => {
     if (isNew) {
       setIsVisible(true);
       const timer = setTimeout(() => {
         setIsVisible(false);
-      }, 1000);
-
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [isNew]);
 
   const handleDelete = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); //
     setIsDeleting(true);
 
     setTimeout(() => {
@@ -49,10 +58,14 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew }) => {
     }, 300);
   };
 
+  const handleClick = () => {
+    onChatClick(chat, avatarSrc, firstLetter);
+  };
+
   return (
     <div
       className={`block ${isNew && isVisible ? 'fadeIn' : ''} ${isDeleting ? 'fadeOut' : ''}`}
-      onClick={() => onChatClick(chat, avatarSrc, firstLetter)}>
+      onClick={handleClick}>
       <div className="imgBx">
         {avatarSrc ? (
           <img
@@ -60,27 +73,25 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew }) => {
             className="chatAvatar"
             src={avatarSrc}
             alt="Chat avatar"
-            onError={(e) => {
-              e.target.style.display = 'none'; // Скрыть изображение при ошибке загрузки
-              e.target.nextElementSibling.style.display = 'flex'; // Показать первую букву
-            }}
+            onError={handleAvatarError}
           />
-        ) : null}
-        <div
-          className="avatarLetter"
-          style={{
-            display: avatarSrc ? 'none' : 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            fontSize: '24px',
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            color: '#fafafa',
-            backgroundColor: '#8f9efe',
-          }}>
-          {firstLetter}
-        </div>
+        ) : (
+          <div
+            className="avatarLetter"
+            style={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontSize: '24px',
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              color: '#fafafa',
+              backgroundColor: '#8f9efe',
+            }}>
+            {firstLetter}
+          </div>
+        )}
       </div>
       <div className="details">
         <div className="listHead">
@@ -104,8 +115,8 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew }) => {
 ChatItem.propTypes = {
   chat: PropTypes.shape({
     chatId: PropTypes.number.isRequired,
-    participants: PropTypes.arrayOf(PropTypes.string).isRequired,
-    messages: PropTypes.arrayOf(PropTypes.object).isRequired,
+    participants: PropTypes.array.isRequired,
+    messages: PropTypes.array.isRequired,
   }).isRequired,
   onChatClick: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
