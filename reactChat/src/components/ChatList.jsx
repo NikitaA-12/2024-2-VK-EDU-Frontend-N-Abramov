@@ -11,14 +11,14 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
   const [chatName, setChatName] = useState(''); // Состояние для имени нового чата
 
   useEffect(() => {
-    // Сортируем чаты по времени последнего сообщения при изменении данных
+    // Автоматическая сортировка чатов при обновлении
     const sortedChats = [...chats].sort((a, b) => {
       const lastMessageA = a.messages[a.messages.length - 1]?.time || 0;
       const lastMessageB = b.messages[b.messages.length - 1]?.time || 0;
-      return new Date(lastMessageB) - new Date(lastMessageA); // Сортируем по убыванию
+      return new Date(lastMessageB) - new Date(lastMessageA);
     });
 
-    // Обновляем чаты в контексте только если сортировка изменила порядок
+    // Обновляем только если порядок изменился
     if (JSON.stringify(sortedChats) !== JSON.stringify(chats)) {
       setChats(sortedChats);
     }

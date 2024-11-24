@@ -1,22 +1,56 @@
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const [avatar, setAvatar] = useState(null);
+  const [avatar, setAvatar] = useState('');
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
 
-  const handleAvatarClick = () => {
-    const newAvatar = prompt('Выберите изображение для аватарки (введите URL):');
-    setAvatar(newAvatar);
+  // Загрузка данных профиля из localStorage при загрузке страницы
+  useEffect(() => {
+    const savedProfile = JSON.parse(localStorage.getItem('profile')) || {};
+    setAvatar(savedProfile.avatar || '');
+    setFullName(savedProfile.fullName || '');
+    setUsername(savedProfile.username || '');
+    setBio(savedProfile.bio || '');
+  }, []);
+
+  // Сохранение данных профиля
+  const handleSave = () => {
+    const profileData = {
+      avatar,
+      fullName,
+      username,
+      bio,
+    };
+
+    try {
+      localStorage.setItem('profile', JSON.stringify(profileData));
+      navigate('/'); // Переход на главную страницу (список чатов)
+    } catch (error) {
+      console.error('Ошибка сохранения профиля:', error);
+    }
   };
 
+  // Возврат на главную страницу без сохранения
   const handleBackClick = () => {
-    navigate('/'); // Переход на главную страницу с чатами
+    navigate('/');
+  };
+
+  // Обработчик выбора файла для аватарки
+  const handleAvatarChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setAvatar(reader.result); // Устанавливаем аватарку как Base64 строку
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -26,22 +60,31 @@ const ProfilePage = () => {
           <ArrowBackIcon />
         </button>
         <h1>Edit Profile</h1>
-        <button className="save-btn">
+        <button onClick={handleSave} className="save-btn">
           <CheckIcon />
         </button>
       </header>
 
       <div className="profile-content">
-        <div className="avatar-container" onClick={handleAvatarClick}>
-          {avatar ? (
-            <img src={avatar} alt="User Avatar" className="avatar" />
-          ) : (
-            <div className="avatar-placeholder">+</div>
-          )}
+        <div className="avatar-container">
+          <label htmlFor="avatar-upload">
+            {avatar ? (
+              <img src={avatar} alt="User Avatar" className="avatar" />
+            ) : (
+              <div className="avatar-placeholder">+</div>
+            )}
+          </label>
+          <input
+            id="avatar-upload"
+            type="file"
+            accept="image/*"
+            onChange={handleAvatarChange}
+            style={{ display: 'none' }}
+          />
         </div>
 
         <div className="form-field">
-          <label>Full name</label>
+          <label>Full Name</label>
           <input
             type="text"
             value={fullName}
@@ -65,7 +108,7 @@ const ProfilePage = () => {
           <textarea
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="Any details about you"
+            placeholder="Tell us about yourself"
           />
         </div>
       </div>

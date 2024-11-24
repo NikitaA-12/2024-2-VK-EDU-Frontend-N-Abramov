@@ -47,9 +47,13 @@ export const ChatProvider = ({ children }) => {
 
   // Обновление существующего чата
   const updateChat = (updatedChat) => {
-    setChats((prevChats) =>
-      prevChats.map((chat) => (chat.chatId === updatedChat.chatId ? updatedChat : chat)),
-    );
+    setChats((prevChats) => {
+      const updated = prevChats.map((chat) =>
+        chat.chatId === updatedChat.chatId ? updatedChat : chat,
+      );
+      localStorage.setItem('chats', JSON.stringify({ chats: updated })); // Сохраняем изменения
+      return updated;
+    });
   };
 
   // Удаление чата

@@ -62,7 +62,7 @@ function App() {
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
         onSearch={handleSearch}
-        onProfileClick={handleProfileClick} // Передаем пропс для обработки клика на профиль
+        onProfileClick={handleProfileClick}
       />
       <div className="tabs">
         <div className="quickBtn">
@@ -89,6 +89,7 @@ function ChatDetails({ chats, onSendMessage }) {
   const { id } = useParams();
   const chatId = parseInt(id, 10);
   const navigate = useNavigate();
+  const { updateChat } = useChatData(); // Добавлено обновление контекста
 
   // Получение текущего чата
   const activeChat = chats.find((chat) => chat.chatId === chatId);
@@ -99,6 +100,14 @@ function ChatDetails({ chats, onSendMessage }) {
     }
   }, [activeChat, navigate]);
 
+  const handleBackClick = () => {
+    // Обновляем чат перед возвратом
+    if (activeChat) {
+      updateChat(activeChat);
+    }
+    navigate('/');
+  };
+
   if (!activeChat) {
     return null;
   }
@@ -108,7 +117,7 @@ function ChatDetails({ chats, onSendMessage }) {
       activeChat={activeChat}
       avatar={getAvatar(chatId)}
       letter={activeChat.chatName.charAt(0).toUpperCase() || ''}
-      onBackClick={() => navigate('/')}
+      onBackClick={handleBackClick}
       onSendMessage={(message) => onSendMessage(chatId, message)}
     />
   );

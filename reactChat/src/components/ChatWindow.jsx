@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
+import { useChatData } from './ChatContext';
 
 const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   const [messages, setMessages] = useState(activeChat ? activeChat.messages : []);
@@ -10,6 +11,8 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   const [newMessageIndexes, setNewMessageIndexes] = useState([]);
   const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  const { updateChat } = useChatData(); // Подключаем updateChat из контекста
 
   // Загрузка сообщений из локального хранилища
   useEffect(() => {
@@ -65,7 +68,8 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
       };
 
       saveChatsToLocalStorage(updatedChat);
-      messageInputRef.current.value = ''; // очищаем поле ввода
+      updateChat(updatedChat); // Сохраняем изменения в глобальном контексте
+      messageInputRef.current.value = ''; // Очищаем поле ввода
       adjustTextareaHeight();
 
       // Удаляем индикатор нового сообщения через 1 секунду
@@ -97,6 +101,17 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     }
   };
 
+  const handleBackClick = () => {
+    // Обновляем чат перед возвратом
+    const updatedChat = {
+      ...activeChat,
+      messages,
+    };
+    updateChat(updatedChat);
+    saveChatsToLocalStorage(updatedChat);
+    onBackClick();
+  };
+
   if (!activeChat) {
     return <div className="chatBox hide">Select a chat to start messaging</div>;
   }
@@ -104,7 +119,7 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   return (
     <div className="chatBox">
       <div className="chat_header">
-        <span id="back" className="back-arrow" onClick={onBackClick}>
+        <span id="back" className="back-arrow" onClick={handleBackClick}>
           <ArrowBackIcon />
         </span>
         <div className="imgcontent">
