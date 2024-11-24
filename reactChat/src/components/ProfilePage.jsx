@@ -53,6 +53,11 @@ const ProfilePage = () => {
     }
   };
 
+  // Имитируем клик по скрытому input при нажатии на контейнер
+  const handleAvatarContainerClick = () => {
+    document.getElementById('avatar-upload').click();
+  };
+
   return (
     <div className="profile-page">
       <header className="profile-header">
@@ -66,14 +71,12 @@ const ProfilePage = () => {
       </header>
 
       <div className="profile-content">
-        <div className="avatar-container">
-          <label htmlFor="avatar-upload">
-            {avatar ? (
-              <img src={avatar} alt="User Avatar" className="avatar" />
-            ) : (
-              <div className="avatar-placeholder">+</div>
-            )}
-          </label>
+        <div className="avatar-container" onClick={handleAvatarContainerClick}>
+          {avatar ? (
+            <img src={avatar} alt="User Avatar" className="avatar" />
+          ) : (
+            <div className="avatar-placeholder">+</div>
+          )}
           <input
             id="avatar-upload"
             type="file"
