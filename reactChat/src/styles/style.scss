@@ -30,6 +30,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 60px;
 }
 
 header .logo {
@@ -40,15 +41,44 @@ header .logo {
   font-size: 1.2em;
 }
 
-header .action {
+.action-container {
   display: flex;
+  align-items: center;
   gap: 15px;
-  cursor: pointer;
+  margin-left: auto;
 }
 
-header .action span {
+/* Кнопка профиля */
+.profile-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
   color: #fff;
   font-size: 1.5em;
+  transition: color 0.3s;
+}
+
+.profile-btn:hover {
+  color: #d4d4d4;
+}
+
+.search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-size: 1.5em;
+  transition: color 0.3s;
+}
+
+.search-btn:hover {
+  color: #d4d4d4;
 }
 
 .content {
@@ -86,7 +116,6 @@ header .action span {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  z-index: 10000;
 }
 
 .quickBtn .createChatButton {

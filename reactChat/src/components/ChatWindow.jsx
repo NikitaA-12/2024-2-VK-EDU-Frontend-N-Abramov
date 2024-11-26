@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
+import { useChatData } from './ChatContext';
 
 const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   const [messages, setMessages] = useState(activeChat ? activeChat.messages : []);
@@ -11,6 +12,8 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  const { updateChat } = useChatData(); // Подключаем updateChat из контекста
+
   // Загрузка сообщений из локального хранилища
   useEffect(() => {
     if (activeChat) {
@@ -18,20 +21,20 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
       const currentChat = storedChats.chats.find((chat) => chat.chatId === activeChat.chatId);
       if (currentChat) {
         setMessages(currentChat.messages.map((msg) => ({ ...msg, read: true })));
+      } else {
+        setMessages([]);
       }
-    } else {
-      setMessages([]); // Сбрасываем сообщения, если activeChat не выбран
     }
   }, [activeChat]);
 
-  // Скроллинг к концу списка сообщений
+  // Скроллинг к последнему сообщению
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Сохранение чатов в локальное хранилище
+  // Сохранение обновлений чатов в localStorage
   const saveChatsToLocalStorage = (updatedChat) => {
     const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
     const chatIndex = storedChats.chats.findIndex((chat) => chat.chatId === updatedChat.chatId);
@@ -43,6 +46,7 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     localStorage.setItem('chats', JSON.stringify(storedChats));
   };
 
+  // Обработка отправки сообщения
   const handleSendMessage = () => {
     const message = messageInputRef.current?.value.trim();
     if (message) {
@@ -64,10 +68,11 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
       };
 
       saveChatsToLocalStorage(updatedChat);
-      messageInputRef.current.value = '';
+      updateChat(updatedChat); // Сохраняем изменения в глобальном контексте
+      messageInputRef.current.value = ''; // Очищаем поле ввода
       adjustTextareaHeight();
 
-      // Удаление индекса нового сообщения через 1 секунду
+      // Удаляем индикатор нового сообщения через 1 секунду
       setTimeout(() => {
         setNewMessageIndexes((prev) =>
           prev.filter((index) => index !== updatedMessages.length - 1),
@@ -76,6 +81,7 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     }
   };
 
+  // Переключение направления сообщения
   const toggleAlignment = () => {
     setAlignment((prevAlignment) => (prevAlignment === 'right' ? 'left' : 'right'));
     setMessages((prevMessages) =>
@@ -86,12 +92,24 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
     );
   };
 
+  // Корректировка высоты textarea
   const adjustTextareaHeight = () => {
     const textarea = messageInputRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
     }
+  };
+
+  const handleBackClick = () => {
+    // Обновляем чат перед возвратом
+    const updatedChat = {
+      ...activeChat,
+      messages,
+    };
+    updateChat(updatedChat);
+    saveChatsToLocalStorage(updatedChat);
+    onBackClick();
   };
 
   if (!activeChat) {
@@ -101,7 +119,7 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
   return (
     <div className="chatBox">
       <div className="chat_header">
-        <span id="back" className="back-arrow" onClick={onBackClick}>
+        <span id="back" className="back-arrow" onClick={handleBackClick}>
           <ArrowBackIcon />
         </span>
         <div className="imgcontent">
@@ -196,7 +214,7 @@ ChatWindow.propTypes = {
         read: PropTypes.bool.isRequired,
       }),
     ).isRequired,
-  }).isRequired,
+  }),
   onBackClick: PropTypes.func.isRequired,
   avatar: PropTypes.string,
   letter: PropTypes.string,

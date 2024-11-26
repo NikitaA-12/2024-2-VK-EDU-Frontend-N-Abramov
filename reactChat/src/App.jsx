@@ -1,143 +1,125 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
 import Modal from './components/Modal.jsx';
+import { useChatData } from './components/ChatContext';
+import ProfilePage from './components/ProfilePage.jsx';
 import avatar1 from './assets/1.png';
 import avatar2 from './assets/2.png';
+import './index.scss';
 
 const avatars = {
   1: avatar1,
   2: avatar2,
+  default: null,
 };
 
-import './index.scss';
+const getAvatar = (chatId) => avatars[chatId] || avatars.default;
 
 function App() {
-  const [activeChat, setActiveChat] = useState(null);
+  const { chats, addChat, updateChat } = useChatData();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [chats, setChats] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [chatAvatar, setChatAvatar] = useState(null);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const storedChats = JSON.parse(localStorage.getItem('chats'));
-    if (storedChats && storedChats.chats) {
-      setChats(storedChats.chats);
-      console.log('Загруженные чаты из localStorage:', storedChats.chats);
-    } else {
-      console.error('Полученные данные не являются массивом:', storedChats);
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('chats', JSON.stringify({ chats }));
-    console.log('Чаты сохранены в localStorage:', chats);
-  }, [chats]);
-
+  // Открытие и закрытие модального окна
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
+  // Создание нового чата
   const createChat = (chatName) => {
-    if (!chatName.trim()) {
-      console.error('Chat name cannot be empty.');
-      return;
-    }
-
-    const newChat = {
-      chatId: chats.length ? Math.max(chats.map((chat) => chat.chatId)) + 1 : 1,
-      chatName: chatName,
-      participants: [chatName, 'You'],
-      messages: [],
-      letter: chatName.charAt(0).toUpperCase(),
-    };
-
-    setChats((prevChats) => [...prevChats, newChat]);
+    if (!chatName.trim()) return; // Проверка на пустое имя
+    addChat(chatName);
     closeModal();
   };
 
+  // Поиск чатов
+  const handleSearch = (term) => setSearchTerm(term);
+
+  // Выбор чата
+  const handleChatSelect = (chat) => navigate(`/chat/${chat.chatId}`);
+
+  // Отправка сообщения
   const handleMessageSend = (chatId, newMessage) => {
-    if (!chatId) {
-      console.error('No active chat to send message.');
-      return;
-    }
-
-    const updatedChats = chats.map((chat) => {
-      if (chat.chatId === chatId) {
-        return {
-          ...chat,
-          messages: [...chat.messages, newMessage],
-        };
-      }
-      return chat;
-    });
-
-    console.log('Обновленные чаты после отправки сообщения:', updatedChats);
-    setChats(updatedChats);
-
-    if (activeChat && activeChat.chatId === chatId) {
-      setActiveChat((prevChat) => ({
-        ...prevChat,
-        messages: [...prevChat.messages, newMessage],
-      }));
+    const updatedChat = chats.find((chat) => chat.chatId === chatId);
+    if (updatedChat) {
+      const newMessages = [...updatedChat.messages, newMessage];
+      updateChat({ ...updatedChat, messages: newMessages });
     }
   };
 
-  const handleSearch = (term) => {
-    setSearchTerm(term);
-    console.log('Текущий поисковый термин:', term);
-  };
-
-  const handleChatSelect = (chat) => {
-    if (chat) {
-      setActiveChat(chat);
-      console.log('Выбранный чат:', chat);
-      const avatarPath = avatars[chat.chatId];
-
-      if (avatarPath && checkImageExists(avatarPath)) {
-        setChatAvatar(avatarPath);
-      } else {
-        setChatAvatar(null);
-      }
-    } else {
-      console.error('Selected chat is undefined.');
-    }
-  };
-
-  const checkImageExists = (src) => {
-    if (!src) return false;
-    const img = new Image();
-    img.src = src;
-    return img.complete;
+  // Обработчик клика на профиль
+  const handleProfileClick = () => {
+    navigate('/profile');
   };
 
   return (
     <div className="container">
-      <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} onSearch={handleSearch} />
+      <Header
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        onSearch={handleSearch}
+        onProfileClick={handleProfileClick}
+      />
       <div className="tabs">
         <div className="quickBtn">
           <button className="createChatButton" onClick={openModal}>
             <AddIcon />
           </button>
         </div>
-        <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />{' '}
+        <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />
       </div>
-
-      {activeChat ? (
-        <ChatWindow
-          activeChat={activeChat}
-          avatar={chatAvatar}
-          letter={activeChat.chatName.charAt(0).toUpperCase()}
-          onBackClick={() => setActiveChat(null)}
-          onSendMessage={handleMessageSend}
+      {isModalOpen && <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={createChat} />}
+      <Routes>
+        <Route path="/" element={null} />
+        <Route
+          path="/chat/:id"
+          element={<ChatDetails chats={chats} onSendMessage={handleMessageSend} />}
         />
-      ) : (
-        <div className="chatBox hide">Select a chat to start messaging</div>
-      )}
-
-      <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={createChat} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Routes>
     </div>
+  );
+}
+
+function ChatDetails({ chats, onSendMessage }) {
+  const { id } = useParams();
+  const chatId = parseInt(id, 10);
+  const navigate = useNavigate();
+  const { updateChat } = useChatData(); // Добавлено обновление контекста
+
+  // Получение текущего чата
+  const activeChat = chats.find((chat) => chat.chatId === chatId);
+
+  useEffect(() => {
+    if (!activeChat) {
+      navigate('/'); // Возврат на главную, если чат не найден
+    }
+  }, [activeChat, navigate]);
+
+  const handleBackClick = () => {
+    // Обновляем чат перед возвратом
+    if (activeChat) {
+      updateChat(activeChat);
+    }
+    navigate('/');
+  };
+
+  if (!activeChat) {
+    return null;
+  }
+
+  return (
+    <ChatWindow
+      activeChat={activeChat}
+      avatar={getAvatar(chatId)}
+      letter={activeChat.chatName.charAt(0).toUpperCase() || ''}
+      onBackClick={handleBackClick}
+      onSendMessage={(message) => onSendMessage(chatId, message)}
+    />
   );
 }
 

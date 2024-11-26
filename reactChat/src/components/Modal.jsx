@@ -4,24 +4,29 @@ import PropTypes from 'prop-types';
 const Modal = ({ isOpen, onClose, onCreate }) => {
   const [chatName, setChatName] = useState('');
 
+  // Функция для создания нового чата
   const createChat = () => {
     if (chatName.trim()) {
-      onCreate(chatName); // Передаем название чата родительскому компоненту
-      setChatName(''); // Сбрасываем значение поля ввода
+      console.log(`Создание чата с названием: "${chatName}"`);
+      onCreate(chatName); // Передаем название чата в родительский компонент
+      setChatName(''); // Сбрасываем поле ввода
+      onClose(); // Закрываем модальное окно
     } else {
-      alert('Пожалуйста, введите название чата'); // Предупреждение, если поле пустое
+      alert('Пожалуйста, введите название чата');
     }
   };
 
+  // Обработка нажатия клавиши Enter
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      createChat(); // Создание чата по нажатию Enter
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault(); // Предотвращаем отправку формы
+      createChat(); // Вызываем функцию создания чата при нажатии Enter
     }
   };
 
-  // Избегаем закрытия модального окна при клике внутри него
+  // Обработка клика внутри модального окна
   const handleModalClick = (e) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Избегаем закрытия модального окна при клике внутри него
   };
 
   return (
@@ -40,7 +45,7 @@ const Modal = ({ isOpen, onClose, onCreate }) => {
           onChange={(e) => setChatName(e.target.value)}
           id="chatNameInput"
           placeholder="Введите название чата"
-          onKeyDown={handleKeyDown} // Обработка нажатия клавиши Enter
+          onKeyDown={handleKeyDown}
           required
         />
         <button id="createChatButton" onClick={createChat}>
