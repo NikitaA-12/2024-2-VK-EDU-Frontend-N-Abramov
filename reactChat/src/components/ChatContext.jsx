@@ -11,60 +11,65 @@ export const ChatProvider = ({ children }) => {
   const [messages, setMessages] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChatId, setSelectedChatId] = useState(null);
+  const [currentChatId, setCurrentChatId] = useState(null); // Добавили текущий ID чата
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const getToken = () => localStorage.getItem('token');
+  const getToken = () => {
+    const token = localStorage.getItem('token');
+    console.log('Retrieved token:', token);
+    return token;
+  };
 
   // Получение сообщений для выбранного чата
   const fetchMessages = async (chatId) => {
+    console.log(`Fetching messages for chatId: ${chatId}`);
+
     try {
       const token = getToken();
       if (!token) {
-        console.error('Token отсутствует');
+        console.error('Authorization token not found.');
         return;
       }
 
-      const response = await $api.get(`/chats/${chatId}/messages/`, {
+      const response = await $api.get(`/messages/?chat=${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const fetchedMessages = response.data;
-      setMessages(fetchedMessages);
-
+      const fetchedMessages = response.data?.results || [];
       console.log('Fetched messages:', fetchedMessages);
+
+      setMessages(fetchedMessages);
     } catch (err) {
-      console.error('Ошибка получения сообщений:', {
+      console.error('Error fetching messages:', {
         status: err.response?.status,
         message: err.message,
-        url: `/chats/${chatId}/messages/`,
-        data: err.response?.data,
+        url: `/messages/?chat=${chatId}`,
       });
       setError('Ошибка загрузки сообщений');
     }
   };
 
-  // Получение чатов из API
-  useEffect(() => {
-    const fetchChats = async () => {
-      try {
-        const token = getToken();
-        if (!token) {
-          setError('Token отсутствует');
-          return;
-        }
+  const fetchChats = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('Token отсутствует');
+        return;
+      }
 
-        setIsLoading(true);
-        setError(null);
+      setIsLoading(true);
+      setError(null);
 
-        const response = await $api.get('/chats/', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { page, page_size: pageSize, search: searchTerm },
-        });
+      const response = await $api.get('/chats/', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, page_size: pageSize, search: searchTerm },
+      });
 
-        const adaptedChats = response.data.results.map((chat) => ({
+      const adaptedChats =
+        response.data?.results?.map((chat) => ({
           id: chat.id,
           title: chat.title,
           members: chat.members,
@@ -75,80 +80,37 @@ export const ChatProvider = ({ children }) => {
           is_private: chat.is_private,
           last_message: chat.last_message,
           unread_messages_count: parseInt(chat.unread_messages_count, 10) || 0,
-        }));
+        })) || [];
 
-        setChats(adaptedChats);
-      } catch (err) {
-        console.error('Ошибка загрузки чатов:', {
-          status: err.response?.status,
-          message: err.message,
-        });
-        setError('Ошибка загрузки чатов');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChats();
-  }, [page, searchTerm, pageSize]);
-
-  // Создание нового чата
-  const addChat = async (chatName) => {
-    try {
-      const token = getToken();
-      if (!token) {
-        setError('Token отсутствует');
-        return;
-      }
-
-      const response = await $api.post(
-        '/chats/',
-        { title: chatName, is_private: true },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      const newChat = {
-        id: response.data.id,
-        title: response.data.title,
-        members: response.data.members,
-        creator: response.data.creator,
-        avatar: response.data.avatar,
-        created_at: new Date(response.data.created_at),
-        updated_at: new Date(response.data.updated_at),
-        is_private: response.data.is_private,
-        last_message: response.data.last_message,
-        unread_messages_count: parseInt(response.data.unread_messages_count, 10) || 0,
-      };
-
-      setChats((prevChats) => [newChat, ...prevChats]);
+      localStorage.setItem('chats', JSON.stringify(adaptedChats));
+      setChats(adaptedChats);
     } catch (err) {
-      console.error('Ошибка создания чата:', err.message);
-      setError('Ошибка создания чата');
-    }
-  };
-
-  // Удаление чата
-  const deleteChat = async (chatId) => {
-    try {
-      const token = getToken();
-      if (!token) {
-        setError('Token отсутствует');
-        return;
-      }
-
-      await $api.delete(`/chats/${chatId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
+      console.error('Ошибка загрузки чатов:', {
+        status: err.response?.status,
+        message: err.message,
       });
-
-      setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-    } catch (err) {
-      console.error('Ошибка удаления чата:', err.message);
-      setError('Ошибка удаления чата');
+      setError('Ошибка загрузки чатов');
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const storedChats = localStorage.getItem('chats');
+    if (storedChats) {
+      const chatsFromStorage = JSON.parse(storedChats);
+      setChats(chatsFromStorage);
+      console.log('Loaded chats from local storage');
+    } else {
+      fetchChats();
+    }
+  }, []);
 
   const onChatSelect = async (chatId) => {
+    console.log(`Selected chat ID: ${chatId}`);
     setSelectedChatId(chatId);
+    setCurrentChatId(chatId); // Устанавливаем текущий ID чата
+
     try {
       await fetchMessages(chatId);
     } catch (error) {
@@ -157,27 +119,67 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
-  const filteredChats = chats.filter((chat) =>
-    chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
   return (
     <ChatContext.Provider
       value={{
         searchTerm,
         setSearchTerm,
-        chats: filteredChats,
+        chats,
         setChats,
         messages,
-        addChat,
-        deleteChat,
+        currentChatId, // Возвращаем currentChatId в контексте
+        setCurrentChatId,
+        addChat: async (chatName) => {
+          try {
+            const token = getToken();
+            if (!token) return;
+
+            const response = await $api.post(
+              '/chats/',
+              { title: chatName, is_private: true },
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              },
+            );
+
+            const newChat = {
+              id: response.data.id,
+              title: response.data.title,
+              members: response.data.members,
+              creator: response.data.creator,
+              avatar: response.data.avatar,
+              created_at: new Date(response.data.created_at),
+              updated_at: new Date(response.data.updated_at),
+              is_private: response.data.is_private,
+              last_message: response.data.last_message,
+              unread_messages_count: parseInt(response.data.unread_messages_count, 10) || 0,
+            };
+
+            setChats((prevChats) => [newChat, ...prevChats]);
+          } catch (err) {
+            console.error('Ошибка создания чата:', err.message);
+            setError('Ошибка создания чата');
+          }
+        },
+        deleteChat: async (chatId) => {
+          try {
+            const token = getToken();
+            if (!token) return;
+
+            await $api.delete(`/chats/${chatId}/`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+
+            const updatedChats = chats.filter((chat) => chat.id !== chatId);
+            setChats(updatedChats);
+            localStorage.setItem('chats', JSON.stringify(updatedChats));
+          } catch (err) {
+            console.error('Ошибка удаления чата:', err.message);
+            setError('Ошибка удаления чата');
+          }
+        },
         onChatSelect,
-        selectedChatId,
         isLoading,
-        setPage,
-        page,
-        setPageSize,
-        pageSize,
         error,
       }}>
       {children}

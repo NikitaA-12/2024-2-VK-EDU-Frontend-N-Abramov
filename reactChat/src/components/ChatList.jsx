@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { useChatData } from './ChatContext';
 import ChatItem from './ChatItem';
 import Modal from './Modal';
-import { $api } from './api.js';
+import $api from './api'; // Убедитесь, что путь к API корректен
 
 const ChatList = ({ onChatSelect, searchTerm }) => {
   const { chats, setChats } = useChatData();

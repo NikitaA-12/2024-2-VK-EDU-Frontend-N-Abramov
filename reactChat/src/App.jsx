@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom';
-import { $api } from './components/api';
+import { $api, fetchMessages } from './components/api';
 import { useChatData } from './components/ChatContext';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
@@ -15,23 +15,16 @@ function App() {
   const { chats, addChat, setChats } = useChatData();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedChatId, setSelectedChatId] = useState(null);
   const navigate = useNavigate();
 
+  // Поиск чатов
   const handleSearch = (term) => setSearchTerm(term);
 
   const handleChatSelect = (chat) => {
-    setSelectedChatId(chat.id);
     navigate(`/chat/${chat.id}`);
   };
 
-  // 📡 Отправка нового сообщения
   const handleMessageSend = async (chatId, newMessage) => {
-    if (!chatId || !newMessage?.text?.trim()) {
-      console.warn('Invalid message or chatId');
-      return;
-    }
-
     try {
       const token = localStorage.getItem('token');
 
@@ -45,13 +38,17 @@ function App() {
       const response = await $api.post(
         url,
         { text: newMessage.text },
-        { headers: { Authorization: `Bearer ${token}` } },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
 
       console.log('Message successfully sent:', response.data);
 
       const updatedChats = chats.map((chat) =>
-        chat.id === chatId ? { ...chat, messages: [...chat.messages, response.data] } : chat,
+        chat.id === chatId
+          ? { ...chat, messages: [...(chat.messages || []), response.data] }
+          : chat,
       );
 
       saveChatsToLocalStorage(updatedChats);
@@ -76,27 +73,19 @@ function App() {
 
       localStorage.setItem('chats', JSON.stringify(sanitizedChats));
     } catch (error) {
-      console.error('Failed to save chats to localStorage:', {
-        message: error.message,
-      });
+      console.error('Failed to save chats to localStorage:', error.message);
     }
   };
 
   const handleBackClick = () => {
-    setSelectedChatId(null);
     navigate('/');
   };
 
   return (
     <div className="container">
       <Routes>
-        {/* Login Route */}
         <Route path="/login" element={<LoginPage onLogin={() => setIsAuthenticated(true)} />} />
-
-        {/* Register Route */}
         <Route path="/register" element={<RegisterPage />} />
-
-        {/* Protected Route для отображения чатов */}
         <Route
           path="/"
           element={
@@ -104,15 +93,25 @@ function App() {
               <Header
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
-                onSearch={handleSearch}
+                onSearch={setSearchTerm}
                 onProfileClick={() => navigate('/profile')}
               />
-              <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />
+              <ChatList
+                chats={
+                  searchTerm
+                    ? chats.filter((chat) =>
+                        chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
+                      )
+                    : chats
+                }
+                onChatSelect={handleChatSelect}
+                searchTerm={searchTerm}
+              />
             </ProtectedRoute>
           }
         />
 
-        {/* Компонент маршрута для отображения чатов */}
+        {/* Отображение сообщений в чате */}
         <Route
           path="/chat/:id"
           element={
@@ -124,7 +123,6 @@ function App() {
           }
         />
 
-        {/* Профиль */}
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
@@ -132,15 +130,35 @@ function App() {
   );
 }
 
-// Компонент маршрута для отображения чатов
 function ChatRoute({ chats, onSendMessage, onBackClick }) {
   const { id } = useParams();
   const chat = chats.find((chat) => chat.id === id);
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    if (chat) {
+      const loadMessages = async () => {
+        try {
+          const fetchedMessages = await fetchMessages(chat.id);
+          setMessages(fetchedMessages);
+        } catch (error) {
+          console.error('Failed to fetch messages:', error.message);
+        }
+      };
+
+      loadMessages();
+    }
+  }, [chat]);
 
   if (!chat) return <div>Chat not found</div>;
 
   return (
-    <ChatWindow onSendMessage={onSendMessage} onBackClick={onBackClick} selectedChatId={chat.id} />
+    <ChatWindow
+      chatId={chat.id}
+      messages={messages}
+      onSendMessage={onSendMessage}
+      onBackClick={onBackClick}
+    />
   );
 }
 
