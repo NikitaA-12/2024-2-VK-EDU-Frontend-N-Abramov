@@ -3,187 +3,143 @@ import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
-import { useChatData } from './ChatContext';
+import axios from 'axios';
 
-const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
-  const [messages, setMessages] = useState(activeChat ? activeChat.messages : []);
+const API_BASE_URL = 'https://vkedu-fullstack-div2.ru/api';
+
+const ChatWindow = ({ onBackClick, selectedChatId = null }) => {
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
   const [alignment, setAlignment] = useState('right');
-  const [newMessageIndexes, setNewMessageIndexes] = useState([]);
-  const messageInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const { updateChat } = useChatData(); // Подключаем updateChat из контекста
+  // Получаем токен из localStorage
+  const getToken = () => localStorage.getItem('token');
 
-  // Загрузка сообщений из локального хранилища
-  useEffect(() => {
-    if (activeChat) {
-      const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
-      const currentChat = storedChats.chats.find((chat) => chat.chatId === activeChat.chatId);
-      if (currentChat) {
-        setMessages(currentChat.messages.map((msg) => ({ ...msg, read: true })));
-      } else {
-        setMessages([]);
-      }
+  // 📌 Получение сообщений для текущего чата через API
+  const fetchMessagesFromAPI = async () => {
+    if (!selectedChatId) {
+      console.warn('Chat ID is not provided. Skipping message fetch.');
+      return;
     }
-  }, [activeChat]);
 
-  // Скроллинг к последнему сообщению
+    const token = getToken();
+    if (!token) {
+      console.error('Authorization token not found.');
+      return;
+    }
+
+    try {
+      const url = `${API_BASE_URL}/chats/${selectedChatId}/messages/`;
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const fetchedMessages = response.data;
+      console.log('Fetched messages:', fetchedMessages);
+      setMessages(fetchedMessages);
+    } catch (error) {
+      console.error('Ошибка при загрузке сообщений:', {
+        status: error.response?.status,
+        message: error.message,
+        url: `${API_BASE_URL}/chats/${selectedChatId}/messages/`,
+        data: error.response?.data,
+      });
+    }
+  };
+
+  // 📌 Отправка нового сообщения через API
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !selectedChatId) {
+      console.warn('Message or Chat ID is not provided.');
+      return;
+    }
+
+    const token = getToken();
+    if (!token) {
+      console.error('Authorization token not found.');
+      return;
+    }
+
+    try {
+      const url = `${API_BASE_URL}/chats/${selectedChatId}/messages/`;
+
+      const response = await axios.post(
+        url,
+        { text: inputMessage },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      const newMessage = response.data;
+      console.log('Message successfully sent:', newMessage);
+
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      setInputMessage('');
+    } catch (error) {
+      console.error('Ошибка при отправке сообщения:', {
+        message: error.message,
+        status: error.response?.status,
+        url: `${API_BASE_URL}/chats/${selectedChatId}/messages/`,
+        data: error.response?.data,
+      });
+    }
+  };
+
+  const adjustTextareaHeight = (e) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  };
+
+  const toggleAlignment = () =>
+    setAlignment((prevAlignment) => (prevAlignment === 'right' ? 'left' : 'right'));
+
+  // 📜 Вывод сообщений при выборе чата для диагностики
+  useEffect(() => {
+    if (selectedChatId) {
+      console.log(`Initiating message fetch for Chat ID: ${selectedChatId}`);
+      fetchMessagesFromAPI();
+    }
+  }, [selectedChatId]);
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
 
-  // Сохранение обновлений чатов в localStorage
-  const saveChatsToLocalStorage = (updatedChat) => {
-    const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
-    const chatIndex = storedChats.chats.findIndex((chat) => chat.chatId === updatedChat.chatId);
-    if (chatIndex !== -1) {
-      storedChats.chats[chatIndex] = updatedChat;
-    } else {
-      storedChats.chats.push(updatedChat);
-    }
-    localStorage.setItem('chats', JSON.stringify(storedChats));
-  };
-
-  // Обработка отправки сообщения
-  const handleSendMessage = () => {
-    const message = messageInputRef.current?.value.trim();
-    if (message) {
-      const newMessage = {
-        type: 'outgoing',
-        from: alignment,
-        content: message,
-        time: new Date().toISOString(),
-        read: false,
-      };
-
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      setNewMessageIndexes((prev) => [...prev, updatedMessages.length - 1]);
-
-      const updatedChat = {
-        ...activeChat,
-        messages: updatedMessages,
-      };
-
-      saveChatsToLocalStorage(updatedChat);
-      updateChat(updatedChat); // Сохраняем изменения в глобальном контексте
-      messageInputRef.current.value = ''; // Очищаем поле ввода
-      adjustTextareaHeight();
-
-      // Удаляем индикатор нового сообщения через 1 секунду
-      setTimeout(() => {
-        setNewMessageIndexes((prev) =>
-          prev.filter((index) => index !== updatedMessages.length - 1),
-        );
-      }, 1000);
-    }
-  };
-
-  // Переключение направления сообщения
-  const toggleAlignment = () => {
-    setAlignment((prevAlignment) => (prevAlignment === 'right' ? 'left' : 'right'));
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) => ({
-        ...msg,
-        type: msg.type === 'outgoing' ? 'incoming' : 'outgoing',
-      })),
-    );
-  };
-
-  // Корректировка высоты textarea
-  const adjustTextareaHeight = () => {
-    const textarea = messageInputRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-    }
-  };
-
-  const handleBackClick = () => {
-    // Обновляем чат перед возвратом
-    const updatedChat = {
-      ...activeChat,
-      messages,
-    };
-    updateChat(updatedChat);
-    saveChatsToLocalStorage(updatedChat);
-    onBackClick();
-  };
-
-  if (!activeChat) {
-    return <div className="chatBox hide">Select a chat to start messaging</div>;
-  }
-
   return (
     <div className="chatBox">
       <div className="chat_header">
-        <span id="back" className="back-arrow" onClick={handleBackClick}>
+        <span id="back" className="back-arrow" onClick={onBackClick}>
           <ArrowBackIcon />
         </span>
-        <div className="imgcontent">
-          <div className="imgBx">
-            {avatar ? (
-              <img id="chatAvatar" src={avatar} alt="avatar" />
-            ) : (
-              <div className="initials">{letter}</div>
-            )}
-          </div>
-          <h3 id="chatName">
-            {activeChat.chatName}
-            <br />
-            <span className="status">online</span>
-          </h3>
-        </div>
         <span id="toggleAlignment" className="material-symbols-outlined" onClick={toggleAlignment}>
           <SyncAltIcon />
         </span>
       </div>
+
       <div className="messageBox">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`message ${msg.type} ${
-              newMessageIndexes.includes(index) ? 'bubble-animation' : ''
-            }`}>
+        {messages.map((msg) => (
+          <div key={msg.id} className={`message ${msg.type}`}>
             <div className="message-content">
-              <p>{msg.content}</p>
+              <p>{msg.text}</p>
               <span className={`time ${msg.type}`}>
                 {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              <span className="checkmarks">
-                {msg.read ? (
-                  <svg
-                    className="checkmark"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    data-testid="DoneAllIcon">
-                    <path d="m18 7-1.41-1.41-6.34 6.34 1.41 1.41zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12zM.41 13.41 6 19l1.41-1.41L1.83 12z"></path>
-                  </svg>
-                ) : (
-                  <svg
-                    className="checkmark"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    data-testid="DoneIcon">
-                    <path d="M9 16.17L4.83 12 3.41 13.41 9 19l12-12-1.41-1.41z" />
-                  </svg>
-                )}
               </span>
             </div>
           </div>
         ))}
         <div ref={messagesEndRef} />
       </div>
+
       <div className="messageInput">
         <textarea
           id="messageInput"
           placeholder="Введите сообщение..."
           rows="1"
-          ref={messageInputRef}
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
           onInput={adjustTextareaHeight}
           onKeyPress={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -201,23 +157,8 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
 };
 
 ChatWindow.propTypes = {
-  activeChat: PropTypes.shape({
-    chatId: PropTypes.number.isRequired,
-    chatName: PropTypes.string.isRequired,
-    participants: PropTypes.arrayOf(PropTypes.string).isRequired,
-    messages: PropTypes.arrayOf(
-      PropTypes.shape({
-        type: PropTypes.string.isRequired,
-        from: PropTypes.string.isRequired,
-        content: PropTypes.string.isRequired,
-        time: PropTypes.string.isRequired,
-        read: PropTypes.bool.isRequired,
-      }),
-    ).isRequired,
-  }),
   onBackClick: PropTypes.func.isRequired,
-  avatar: PropTypes.string,
-  letter: PropTypes.string,
+  selectedChatId: PropTypes.string,
 };
 
 export default ChatWindow;

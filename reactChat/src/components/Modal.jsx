@@ -3,30 +3,62 @@ import PropTypes from 'prop-types';
 
 const Modal = ({ isOpen, onClose, onCreate }) => {
   const [chatName, setChatName] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Функция для создания нового чата
-  const createChat = () => {
-    if (chatName.trim()) {
-      console.log(`Создание чата с названием: "${chatName}"`);
-      onCreate(chatName); // Передаем название чата в родительский компонент
-      setChatName(''); // Сбрасываем поле ввода
-      onClose(); // Закрываем модальное окно
-    } else {
-      alert('Пожалуйста, введите название чата');
+  // Валидация названия чата
+  const validateChatName = (name) => {
+    if (name.trim().length < 3) {
+      return 'Название чата должно содержать не менее 3 символов.';
+    }
+    if (/[^a-zA-Z0-9а-яА-Я\s]/.test(name)) {
+      return 'Название чата может содержать только буквы, цифры и пробелы.';
+    }
+    return '';
+  };
+
+  // Создание чата
+  // Создание чата
+  const createChat = async () => {
+    const trimmedName = chatName.trim(); // убираем лишние пробелы
+    const validationError = validateChatName(trimmedName);
+
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+
+    try {
+      console.log('Попытка создать чат с параметрами:', {
+        title: trimmedName,
+        is_private: isPrivate,
+      });
+
+      // Передаем только название чата и приватность, не объект с параметрами
+      await onCreate(trimmedName, isPrivate);
+
+      // Сброс состояния формы
+      setChatName('');
+      setIsPrivate(false);
+      setErrorMessage('');
+      onClose();
+    } catch (error) {
+      console.error('Ошибка при создании чата:', error);
+      setErrorMessage('Не удалось создать чат. Попробуйте снова.');
     }
   };
 
   // Обработка нажатия клавиши Enter
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault(); // Предотвращаем отправку формы
-      createChat(); // Вызываем функцию создания чата при нажатии Enter
+      e.preventDefault();
+      createChat();
     }
   };
 
   // Обработка клика внутри модального окна
   const handleModalClick = (e) => {
-    e.stopPropagation(); // Избегаем закрытия модального окна при клике внутри него
+    e.stopPropagation();
   };
 
   return (
@@ -48,7 +80,22 @@ const Modal = ({ isOpen, onClose, onCreate }) => {
           onKeyDown={handleKeyDown}
           required
         />
-        <button id="createChatButton" onClick={createChat}>
+        <div className="private-checkbox">
+          <label>
+            <input
+              type="checkbox"
+              checked={isPrivate}
+              onChange={(e) => setIsPrivate(e.target.checked)}
+            />
+            Приватный чат
+          </label>
+        </div>
+        {errorMessage && <p className="error">{errorMessage}</p>}
+        <button
+          id="createChatButton"
+          onClick={createChat}
+          disabled={!chatName.trim()}
+          style={{ cursor: !chatName.trim() ? 'not-allowed' : 'pointer' }}>
           Создать чат
         </button>
       </div>

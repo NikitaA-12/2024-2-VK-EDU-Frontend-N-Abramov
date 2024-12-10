@@ -1,125 +1,146 @@
-import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import AddIcon from '@mui/icons-material/Add';
+import { useState } from 'react';
+import { Routes, Route, useNavigate, Navigate, useParams } from 'react-router-dom';
+import { $api } from './components/api';
+import { useChatData } from './components/ChatContext';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
-import Modal from './components/Modal.jsx';
-import { useChatData } from './components/ChatContext';
+import LoginPage from './components/LoginPage.jsx';
+import RegisterPage from './components/RegisterPage.jsx';
 import ProfilePage from './components/ProfilePage.jsx';
-import avatar1 from './assets/1.png';
-import avatar2 from './assets/2.png';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 import './index.scss';
 
-const avatars = {
-  1: avatar1,
-  2: avatar2,
-  default: null,
-};
-
-const getAvatar = (chatId) => avatars[chatId] || avatars.default;
-
 function App() {
-  const { chats, addChat, updateChat } = useChatData();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { chats, addChat, setChats } = useChatData();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedChatId, setSelectedChatId] = useState(null);
   const navigate = useNavigate();
 
-  // Открытие и закрытие модального окна
-  const openModal = () => setIsModalOpen(true);
-  const closeModal = () => setIsModalOpen(false);
-
-  // Создание нового чата
-  const createChat = (chatName) => {
-    if (!chatName.trim()) return; // Проверка на пустое имя
-    addChat(chatName);
-    closeModal();
-  };
-
-  // Поиск чатов
   const handleSearch = (term) => setSearchTerm(term);
 
-  // Выбор чата
-  const handleChatSelect = (chat) => navigate(`/chat/${chat.chatId}`);
+  const handleChatSelect = (chat) => {
+    setSelectedChatId(chat.id);
+    navigate(`/chat/${chat.id}`);
+  };
 
-  // Отправка сообщения
-  const handleMessageSend = (chatId, newMessage) => {
-    const updatedChat = chats.find((chat) => chat.chatId === chatId);
-    if (updatedChat) {
-      const newMessages = [...updatedChat.messages, newMessage];
-      updateChat({ ...updatedChat, messages: newMessages });
+  // 📡 Отправка нового сообщения
+  const handleMessageSend = async (chatId, newMessage) => {
+    if (!chatId || !newMessage?.text?.trim()) {
+      console.warn('Invalid message or chatId');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        console.error('No token found in localStorage');
+        return;
+      }
+
+      const url = `/api/chats/${chatId}/messages/`;
+
+      const response = await $api.post(
+        url,
+        { text: newMessage.text },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      console.log('Message successfully sent:', response.data);
+
+      const updatedChats = chats.map((chat) =>
+        chat.id === chatId ? { ...chat, messages: [...chat.messages, response.data] } : chat,
+      );
+
+      saveChatsToLocalStorage(updatedChats);
+      setChats(updatedChats);
+    } catch (error) {
+      console.error('Error sending message:', {
+        message: error.message,
+        status: error.response?.status,
+        url: `/api/chats/${chatId}/messages/`,
+        data: error.response?.data,
+      });
     }
   };
 
-  // Обработчик клика на профиль
-  const handleProfileClick = () => {
-    navigate('/profile');
+  const saveChatsToLocalStorage = (updatedChats) => {
+    try {
+      const sanitizedChats = updatedChats.map((chat) => ({
+        id: chat.id,
+        title: chat.title || 'Unknown Chat',
+        messages: chat.messages || [],
+      }));
+
+      localStorage.setItem('chats', JSON.stringify(sanitizedChats));
+    } catch (error) {
+      console.error('Failed to save chats to localStorage:', {
+        message: error.message,
+      });
+    }
+  };
+
+  const handleBackClick = () => {
+    setSelectedChatId(null);
+    navigate('/');
   };
 
   return (
     <div className="container">
-      <Header
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        onSearch={handleSearch}
-        onProfileClick={handleProfileClick}
-      />
-      <div className="tabs">
-        <div className="quickBtn">
-          <button className="createChatButton" onClick={openModal}>
-            <AddIcon />
-          </button>
-        </div>
-        <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />
-      </div>
-      {isModalOpen && <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={createChat} />}
       <Routes>
-        <Route path="/" element={null} />
+        {/* Login Route */}
+        <Route path="/login" element={<LoginPage onLogin={() => setIsAuthenticated(true)} />} />
+
+        {/* Register Route */}
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected Route для отображения чатов */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Header
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                onSearch={handleSearch}
+                onProfileClick={() => navigate('/profile')}
+              />
+              <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Компонент маршрута для отображения чатов */}
         <Route
           path="/chat/:id"
-          element={<ChatDetails chats={chats} onSendMessage={handleMessageSend} />}
+          element={
+            <ChatRoute
+              chats={chats}
+              onSendMessage={handleMessageSend}
+              onBackClick={handleBackClick}
+            />
+          }
         />
+
+        {/* Профиль */}
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </div>
   );
 }
 
-function ChatDetails({ chats, onSendMessage }) {
+// Компонент маршрута для отображения чатов
+function ChatRoute({ chats, onSendMessage, onBackClick }) {
   const { id } = useParams();
-  const chatId = parseInt(id, 10);
-  const navigate = useNavigate();
-  const { updateChat } = useChatData(); // Добавлено обновление контекста
+  const chat = chats.find((chat) => chat.id === id);
 
-  // Получение текущего чата
-  const activeChat = chats.find((chat) => chat.chatId === chatId);
-
-  useEffect(() => {
-    if (!activeChat) {
-      navigate('/'); // Возврат на главную, если чат не найден
-    }
-  }, [activeChat, navigate]);
-
-  const handleBackClick = () => {
-    // Обновляем чат перед возвратом
-    if (activeChat) {
-      updateChat(activeChat);
-    }
-    navigate('/');
-  };
-
-  if (!activeChat) {
-    return null;
-  }
+  if (!chat) return <div>Chat not found</div>;
 
   return (
-    <ChatWindow
-      activeChat={activeChat}
-      avatar={getAvatar(chatId)}
-      letter={activeChat.chatName.charAt(0).toUpperCase() || ''}
-      onBackClick={handleBackClick}
-      onSendMessage={(message) => onSendMessage(chatId, message)}
-    />
+    <ChatWindow onSendMessage={onSendMessage} onBackClick={onBackClick} selectedChatId={chat.id} />
   );
 }
 

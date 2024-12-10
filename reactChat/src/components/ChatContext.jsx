@@ -1,77 +1,164 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { initialChatData } from './chat-data';
+import { $api } from './api';
 
-// Создание контекста для чатов
 const ChatContext = createContext();
 
-// Хук для использования данных контекста
 export const useChatData = () => useContext(ChatContext);
 
-// Провайдер для управления данными чатов
 export const ChatProvider = ({ children }) => {
-  const [searchTerm, setSearchTerm] = useState(''); // Хранение текущего текста поиска
-  const [chats, setChats] = useState(() => {
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getToken = () => localStorage.getItem('token');
+
+  // Получение сообщений для выбранного чата
+  const fetchMessages = async (chatId) => {
     try {
-      const storedChats = JSON.parse(localStorage.getItem('chats'));
-      if (storedChats && Array.isArray(storedChats.chats)) {
-        return storedChats.chats;
+      const token = getToken();
+      if (!token) {
+        console.error('Token отсутствует');
+        return;
       }
-    } catch (error) {
-      console.error('Ошибка чтения данных из localStorage:', error);
+
+      const response = await $api.get(`/chats/${chatId}/messages/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const fetchedMessages = response.data;
+      setMessages(fetchedMessages);
+
+      console.log('Fetched messages:', fetchedMessages);
+    } catch (err) {
+      console.error('Ошибка получения сообщений:', {
+        status: err.response?.status,
+        message: err.message,
+        url: `/chats/${chatId}/messages/`,
+        data: err.response?.data,
+      });
+      setError('Ошибка загрузки сообщений');
     }
-    return initialChatData.chats; // Возвращаем начальные данные, если ничего нет в localStorage
-  });
-
-  const [selectedChatId, setSelectedChatId] = useState(null); // Хранение выбранного чата
-
-  // Сохраняем чаты в localStorage при каждом изменении
-  useEffect(() => {
-    try {
-      localStorage.setItem('chats', JSON.stringify({ chats }));
-    } catch (error) {
-      console.error('Ошибка записи данных в localStorage:', error);
-    }
-  }, [chats]);
-
-  // Добавление нового чата
-  const addChat = (chatName) => {
-    const newChat = {
-      chatId: chats.length > 0 ? Math.max(...chats.map((chat) => chat.chatId)) + 1 : 1,
-      chatName,
-      participants: [chatName, 'You'],
-      messages: [],
-    };
-    setChats((prevChats) => [newChat, ...prevChats]);
   };
 
-  // Обновление существующего чата
-  const updateChat = (updatedChat) => {
-    setChats((prevChats) => {
-      const updated = prevChats.map((chat) =>
-        chat.chatId === updatedChat.chatId ? updatedChat : chat,
+  // Получение чатов из API
+  useEffect(() => {
+    const fetchChats = async () => {
+      try {
+        const token = getToken();
+        if (!token) {
+          setError('Token отсутствует');
+          return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        const response = await $api.get('/chats/', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page, page_size: pageSize, search: searchTerm },
+        });
+
+        const adaptedChats = response.data.results.map((chat) => ({
+          id: chat.id,
+          title: chat.title,
+          members: chat.members,
+          creator: chat.creator,
+          avatar: chat.avatar,
+          created_at: new Date(chat.created_at),
+          updated_at: new Date(chat.updated_at),
+          is_private: chat.is_private,
+          last_message: chat.last_message,
+          unread_messages_count: parseInt(chat.unread_messages_count, 10) || 0,
+        }));
+
+        setChats(adaptedChats);
+      } catch (err) {
+        console.error('Ошибка загрузки чатов:', {
+          status: err.response?.status,
+          message: err.message,
+        });
+        setError('Ошибка загрузки чатов');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChats();
+  }, [page, searchTerm, pageSize]);
+
+  // Создание нового чата
+  const addChat = async (chatName) => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('Token отсутствует');
+        return;
+      }
+
+      const response = await $api.post(
+        '/chats/',
+        { title: chatName, is_private: true },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      localStorage.setItem('chats', JSON.stringify({ chats: updated })); // Сохраняем изменения
-      return updated;
-    });
+
+      const newChat = {
+        id: response.data.id,
+        title: response.data.title,
+        members: response.data.members,
+        creator: response.data.creator,
+        avatar: response.data.avatar,
+        created_at: new Date(response.data.created_at),
+        updated_at: new Date(response.data.updated_at),
+        is_private: response.data.is_private,
+        last_message: response.data.last_message,
+        unread_messages_count: parseInt(response.data.unread_messages_count, 10) || 0,
+      };
+
+      setChats((prevChats) => [newChat, ...prevChats]);
+    } catch (err) {
+      console.error('Ошибка создания чата:', err.message);
+      setError('Ошибка создания чата');
+    }
   };
 
   // Удаление чата
-  const deleteChat = (chatId) => {
-    setChats((prevChats) => prevChats.filter((chat) => chat.chatId !== chatId));
-    if (selectedChatId === chatId) {
-      setSelectedChatId(null); // Сбрасываем выбранный чат, если он удален
+  const deleteChat = async (chatId) => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('Token отсутствует');
+        return;
+      }
+
+      await $api.delete(`/chats/${chatId}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
+    } catch (err) {
+      console.error('Ошибка удаления чата:', err.message);
+      setError('Ошибка удаления чата');
     }
   };
 
-  // Выбор чата
-  const onChatSelect = (chatId) => {
+  const onChatSelect = async (chatId) => {
     setSelectedChatId(chatId);
+    try {
+      await fetchMessages(chatId);
+    } catch (error) {
+      console.error('Ошибка загрузки сообщений после выбора чата:', error.message);
+      setError('Ошибка загрузки сообщений');
+    }
   };
 
-  // Фильтрация чатов по поисковому запросу
   const filteredChats = chats.filter((chat) =>
-    chat.chatName.toLowerCase().includes(searchTerm.toLowerCase()),
+    chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -81,11 +168,17 @@ export const ChatProvider = ({ children }) => {
         setSearchTerm,
         chats: filteredChats,
         setChats,
+        messages,
         addChat,
-        updateChat,
         deleteChat,
         onChatSelect,
         selectedChatId,
+        isLoading,
+        setPage,
+        page,
+        setPageSize,
+        pageSize,
+        error,
       }}>
       {children}
     </ChatContext.Provider>
