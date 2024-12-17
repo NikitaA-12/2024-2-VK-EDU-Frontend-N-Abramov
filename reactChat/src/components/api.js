@@ -1,5 +1,5 @@
 import axios from 'axios';
-import Centrifuge from 'centrifuge';
+import { Centrifuge } from 'centrifuge';
 
 // Базовая настройка Axios
 const $api = axios.create({
