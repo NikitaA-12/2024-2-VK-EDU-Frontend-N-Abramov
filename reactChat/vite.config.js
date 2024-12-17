@@ -6,7 +6,7 @@ export default defineConfig({
   base: '/2024-2-VK-EDU-Frontend-N-Abramov/',
   build: {
     rollupOptions: {
-      external: ['centrifuge', 'axios'],
+      external: ['centrifuge'],
     },
   },
 });
