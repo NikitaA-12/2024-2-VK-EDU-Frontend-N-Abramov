@@ -1,105 +1,78 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
 import axios from 'axios';
 import { useChatData } from './ChatContext';
-
-const API_BASE_URL = 'https://vkedu-fullstack-div2.ru/api';
 
 const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
   const { currentChatId, chats, setChats } = useChatData();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
-  const [alignment, setAlignment] = useState('right');
-  const [nextPage, setNextPage] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
 
   const getToken = () => localStorage.getItem('token');
 
-  // Загружаем сообщения при смене текущего чата
-  useEffect(() => {
-    const fetchMessages = async () => {
-      if (currentChatId) {
-        console.log('Fetching messages for chat ID:', currentChatId);
-        try {
-          const token = getToken();
-          const response = await axios.get(`${API_BASE_URL}/messages/?chat=${currentChatId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          const { results, next } = response.data;
-          console.log('Messages fetched:', results);
-          setMessages(results);
-          setNextPage(next);
-        } catch (error) {
-          console.error('Ошибка загрузки сообщений:', error.message);
-        }
-      }
-    };
-
-    fetchMessages();
-  }, [currentChatId]);
-
-  // Загрузка следующей страницы сообщений
-  const loadMoreMessages = async () => {
-    if (!nextPage) return;
-
-    console.log('Loading more messages from:', nextPage);
-    try {
-      const token = getToken();
-      const response = await axios.get(nextPage, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const { results, next } = response.data;
-      console.log('More messages loaded:', results);
-      setMessages((prevMessages) => [...prevMessages, ...results]);
-      setNextPage(next);
-    } catch (error) {
-      console.error('Ошибка загрузки следующей страницы сообщений:', error.message);
-    }
-  };
-
-  // Отправка сообщения
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !currentChatId) return;
-
-    console.log('Sending message:', inputMessage);
+  const fetchCurrentUser = async () => {
     const token = getToken();
-    if (!token) {
-      console.error('Token отсутствует');
-      return;
-    }
+    if (!token) return;
 
     try {
-      const url = `${API_BASE_URL}/messages/`;
-      const response = await axios.post(
-        url,
-        { text: inputMessage, chat: currentChatId },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-
-      const newMessage = response.data;
-      console.log('Message sent:', newMessage);
-      setMessages((prevMessages) => [newMessage, ...prevMessages]);
-      setInputMessage('');
+      const response = await axios.get('/api/user/current/', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentUser(response.data);
     } catch (error) {
-      console.error('Ошибка отправки сообщения:', error.message);
+      console.error('Ошибка получения информации о текущем пользователе:', error.message);
     }
   };
 
-  // Прочитать сообщение
-  const markMessageAsRead = async (messageId) => {
-    console.log('Marking message as read:', messageId);
+  const fetchMessages = async () => {
+    setIsLoading(true);
     try {
       const token = getToken();
-      await axios.post(`${API_BASE_URL}/message/${messageId}/read/`, null, {
+      if (!token) return;
+
+      const response = await axios.get('/api/messages/', {
+        params: {
+          chat: currentChatId,
+          page: 1,
+          page_size: 50,
+        },
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (response.status === 200 && response.data?.results) {
+        const fetchedMessages = response.data.results;
+
+        // Сортируем сообщения по времени создания (от старых к новым)
+        const sortedMessages = fetchedMessages.sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        );
+
+        setMessages(sortedMessages);
+
+        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
+        const updatedChats = storedChats.map((chat) => {
+          if (chat.id === currentChatId) {
+            return {
+              ...chat,
+              messages: sortedMessages,
+              last_message: sortedMessages[sortedMessages.length - 1],
+            };
+          }
+          return chat;
+        });
+
+        localStorage.setItem('chats', JSON.stringify(updatedChats));
+        setChats(updatedChats);
+      }
     } catch (error) {
-      console.error('Ошибка пометки сообщения как прочитанного:', error.message);
+      console.error('Ошибка загрузки сообщений:', error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -109,67 +82,128 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   };
 
-  const toggleAlignment = () => {
-    console.log('Toggling alignment. Current alignment:', alignment);
-    setAlignment((prevAlignment) => (prevAlignment === 'right' ? 'left' : 'right'));
-  };
-
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  useEffect(scrollToBottom, [messages]);
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !currentChatId) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    const newMessage = {
+      id: `${Date.now()}`,
+      text: inputMessage,
+      chat: currentChatId,
+      created_at: new Date().toISOString(),
+      sender: currentUser,
+    };
+
+    try {
+      const response = await axios.post('/api/messages/', newMessage, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 201) {
+        // Обновляем сообщения в интерфейсе
+        setMessages((prevMessages) => {
+          const updatedMessages = [...prevMessages, newMessage].sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at),
+          );
+          return updatedMessages;
+        });
+
+        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
+        const updatedChats = storedChats.map((chat) => {
+          if (chat.id === currentChatId) {
+            return {
+              ...chat,
+              messages: [...(chat.messages || []), newMessage].sort(
+                (a, b) => new Date(a.created_at) - new Date(b.created_at),
+              ),
+              last_message: newMessage,
+            };
+          }
+          return chat;
+        });
+
+        localStorage.setItem('chats', JSON.stringify(updatedChats));
+        setChats(updatedChats);
+      }
+    } catch (error) {
+      console.error('Ошибка отправки сообщения:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentChatId) {
+      fetchMessages();
+    }
+  }, [currentChatId]);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const currentChat = chats.find((chat) => chat.id === currentChatId);
+
+  const getChatInitial = (name) => (name ? name.charAt(0).toUpperCase() : '');
 
   return (
     <div className="chatBox">
       <div className="chat_header">
-        <span id="back" className="back-arrow" onClick={onBackClick}>
+        <span id="back" className="back-arrow" onClick={() => onBackClick()}>
           <ArrowBackIcon />
         </span>
 
-        <span id="toggleAlignment" className="material-symbols-outlined" onClick={toggleAlignment}>
-          <SyncAltIcon />
-        </span>
+        {currentChat && (
+          <div className="imgcontent">
+            <div className="imgBx">
+              {currentChat.avatar ? (
+                <img src={currentChat.avatar} alt="Chat Avatar" className="avatar" />
+              ) : (
+                <div className="default-avatar">{getChatInitial(currentChat.title)}</div>
+              )}
+            </div>
+            <h3>{currentChat.title}</h3>
+          </div>
+        )}
       </div>
 
+      {isLoading && <p>Loading messages...</p>}
+
       <div className="messageBox">
-        <button onClick={loadMoreMessages} disabled={!nextPage} className="load-more-btn">
-          Загрузить ещё
-        </button>
-        {messages.map((msg) => (
-          <div key={msg.id} className="message">
-            <div className="message-content">
-              <div className="sender-info">
-                {msg.sender?.avatar && (
-                  <img
-                    src={msg.sender.avatar}
-                    alt={`${msg.sender.username}'s avatar`}
-                    className="avatar"
-                  />
-                )}
-                <span className="username">{msg.sender?.first_name || 'Unknown'}</span>
-              </div>
-              <p>{msg.text || '[No text]'}</p>
-              {msg.files?.length > 0 && (
-                <div className="message-files">
-                  {msg.files.map((file, index) => (
-                    <a key={index} href={file.item} target="_blank" rel="noopener noreferrer">
-                      Вложение {index + 1}
-                    </a>
-                  ))}
-                </div>
+        {messages.map((msg) => {
+          const isOutgoing = currentUser && msg.sender?.id === currentUser.id;
+          return (
+            <div key={msg.id} className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+              {msg.sender?.avatar && (
+                <img
+                  src={msg.sender.avatar}
+                  alt={`${msg.sender.username}'s avatar`}
+                  className="avatar"
+                />
               )}
-              <span className="time">
-                {new Date(msg.created_at).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
+              <div className="message-content">
+                <span className="username">{msg.sender?.username}</span>
+                <div className="message-text">{msg.text || '[No text]'}</div>
+                <span className="time">
+                  {new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
@@ -189,7 +223,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
           }}
         />
         <button id="send-btn" className="send-btn" onClick={handleSendMessage}>
-          <SendIcon />
+          <SendIcon className="custom-icon" />
         </button>
       </div>
     </div>

@@ -3,59 +3,96 @@ import PropTypes from 'prop-types';
 import { useChatData } from './ChatContext';
 import ChatItem from './ChatItem';
 import Modal from './Modal';
-import $api from './api'; // Убедитесь, что путь к API корректен
+import $api from './api';
 
 const ChatList = ({ onChatSelect, searchTerm }) => {
-  const { chats, setChats } = useChatData();
+  const { chats, setChats, currentChatId } = useChatData();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newChatId, setNewChatId] = useState(null);
   const [chatName, setChatName] = useState('');
+  const [deletingChatId, setDeletingChatId] = useState(null);
 
-  // Сортировка чатов по последнему сообщению
-  useEffect(() => {
-    const sortedChats = [...chats].sort((a, b) => {
-      const lastMessageA = new Date(a.last_message?.time || 0).getTime();
-      const lastMessageB = new Date(b.last_message?.time || 0).getTime();
-      return lastMessageB - lastMessageA;
-    });
-
-    if (JSON.stringify(sortedChats) !== JSON.stringify(chats)) {
-      setChats(sortedChats);
-    }
-  }, [chats, setChats]);
-
-  // Сброс ID нового чата через 300 мс после создания
-  useEffect(() => {
-    if (newChatId !== null) {
-      const timer = setTimeout(() => setNewChatId(null), 300);
-      return () => clearTimeout(timer);
-    }
-  }, [newChatId]);
-
-  // Удаление чата через API
-  const deleteChat = async (chatId) => {
+  const saveChatsToLocalStorage = (updatedChats) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.error('Token not found');
-        return;
-      }
-
-      await $api.delete(`/chats/${chatId}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const updatedChats = chats.filter((chat) => chat.id !== chatId);
-      setChats(updatedChats);
+      localStorage.setItem('chats', JSON.stringify(updatedChats));
+      console.log('Chats saved to localStorage');
     } catch (error) {
-      console.error('Error deleting chat:', error);
+      console.error('Failed to save chats to localStorage:', error.message);
     }
   };
 
-  // Фильтрация чатов по поисковому запросу
-  const filteredChats = chats.filter((chat) =>
-    chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  useEffect(() => {
+    const updatedChats = [...chats].sort((a, b) => {
+      const lastMessageA = a.last_message?.created_at
+        ? new Date(a.last_message.created_at).getTime()
+        : 0;
+      const lastMessageB = b.last_message?.created_at
+        ? new Date(b.last_message.created_at).getTime()
+        : 0;
+
+      if (lastMessageB !== lastMessageA) return lastMessageB - lastMessageA;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+
+    if (JSON.stringify(updatedChats) !== JSON.stringify(chats)) {
+      console.log('Chats updated and sorted');
+      setChats(updatedChats);
+      saveChatsToLocalStorage(updatedChats);
+    }
+  }, [chats, setChats]);
+
+  const deleteChat = async (chatId) => {
+    setDeletingChatId(chatId);
+    try {
+      console.log(`Deleting chat with ID: ${chatId}`);
+      await $api.delete(`/chat/${chatId}/`);
+
+      const updatedChats = chats.filter((chat) => chat.id !== chatId);
+      setChats(updatedChats);
+      saveChatsToLocalStorage(updatedChats);
+
+      console.log('Chat deleted successfully');
+    } catch (error) {
+      console.error('Error deleting chat:', error.message);
+    } finally {
+      setDeletingChatId(null);
+    }
+  };
+
+  const handleCreateChat = async (title, isPrivate) => {
+    try {
+      console.log(`Creating chat with title: "${title}"`);
+      const response = await $api.post('/chats/', {
+        title,
+        is_private: isPrivate,
+      });
+
+      const newChat = {
+        ...response.data,
+        created_at: new Date(response.data.created_at),
+        updated_at: new Date(response.data.updated_at),
+      };
+
+      console.log('New chat received from API:', newChat);
+
+      const updatedChats = [newChat, ...chats];
+      setChats(updatedChats);
+      saveChatsToLocalStorage(updatedChats);
+
+      console.log('New chat created and state updated');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to create chat:', error.message);
+    }
+  };
+
+  const filteredChats = searchTerm
+    ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    : chats;
+
+  const formatTime = (isoString) => {
+    const date = new Date(isoString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
 
   return (
     <div className="chatlist">
@@ -64,18 +101,22 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
           filteredChats.map((chat) => (
             <ChatItem
               key={chat.id}
-              title={chat.title}
-              avatar={chat.avatar}
-              lastMessage={chat.last_message}
-              unreadMessagesCount={chat.unread_messages_count}
+              chat={chat}
+              isActive={chat.id === currentChatId}
               onClick={() => onChatSelect(chat)}
               onDelete={() => deleteChat(chat.id)}
+              lastMessageTime={
+                chat.last_message?.created_at ? formatTime(chat.last_message.created_at) : ''
+              }
+              lastMessageContent={chat.last_message?.content || 'Нет сообщений'}
+              isDeleting={deletingChatId === chat.id}
             />
           ))
         ) : (
           <div>No chats available</div>
         )}
       </div>
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

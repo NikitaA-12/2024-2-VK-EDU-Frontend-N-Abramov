@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { $api } from './api'; // Использование axios с базовым URL
+import { $api } from './api';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -8,7 +8,7 @@ const RegisterPage = () => {
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
   const [password, setPassword] = useState('');
-  const [avatar, setAvatar] = useState(null); // Для аватара
+  const [avatar, setAvatar] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -32,13 +32,13 @@ const RegisterPage = () => {
     }
 
     try {
-      const formData = new FormData(); // Используем FormData для отправки файла
+      const formData = new FormData();
       formData.append('username', username);
       formData.append('first_name', firstName);
       formData.append('last_name', lastName);
       formData.append('bio', bio);
       formData.append('password', password);
-      if (avatar) formData.append('avatar', avatar); // Добавляем аватар
+      if (avatar) formData.append('avatar', avatar);
 
       const response = await $api.post('/register/', formData, {
         headers: {
@@ -46,22 +46,19 @@ const RegisterPage = () => {
         },
       });
 
-      // Логирование для отладки
       console.log('Response:', response.data);
 
       // Проверка наличия токенов в ответе
       if (response.data && response.data.access && response.data.refresh) {
-        // Сохраняем токен и refresh токен в localStorage
         localStorage.setItem('token', response.data.access);
         localStorage.setItem('refresh', response.data.refresh);
-        localStorage.setItem('isAuthenticated', 'true'); // Устанавливаем статус аутентификации
+        localStorage.setItem('isAuthenticated', 'true');
       } else {
         setError('Server did not return valid tokens');
       }
 
-      navigate('/'); // Перенаправляем на главную страницу
+      navigate('/');
     } catch (error) {
-      // Логируем ошибку
       console.error('Error:', error.response ? error.response.data : error.message);
       setError(error.response?.data?.detail || 'Registration failed');
     } finally {
@@ -98,11 +95,7 @@ const RegisterPage = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <input
-        type="file"
-        placeholder="Avatar"
-        onChange={(e) => setAvatar(e.target.files[0])} // Убираем аватар
-      />
+      <input type="file" placeholder="Avatar" onChange={(e) => setAvatar(e.target.files[0])} />
       <button onClick={handleRegister} disabled={loading}>
         {loading ? 'Registering...' : 'Register'}
       </button>

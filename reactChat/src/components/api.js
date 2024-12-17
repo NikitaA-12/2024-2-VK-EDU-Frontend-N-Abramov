@@ -52,10 +52,46 @@ const initAndStartCentrifugo = (chatId, onMessage) => {
     }
   });
 
+  subscription.on('error', (err) => {
+    console.error(`Centrifugo subscription error for chat:${chatId}`, err);
+  });
+
+  subscription.on('subscribe', () => {
+    console.log(`Subscribed to chat:${chatId}`);
+  });
+
   return { centrifuge, subscription };
 };
 
-// Асинхронные функции API
+// Создание чата
+const createChat = async (chatName) => {
+  try {
+    const response = await $api.post('/chats/', { title: chatName.trim() });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating chat:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Удаление чата
+const deleteChat = async (chatId) => {
+  try {
+    console.log(`Attempting to delete chat with ID: ${chatId}`);
+
+    await $api.delete(`/chat/${chatId}/`);
+    console.log(`Chat with ID ${chatId} deleted successfully`);
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.error(`Chat with ID ${chatId} not found on server`);
+    } else {
+      console.error('API Error deleting chat:', error.response?.data || error.message);
+    }
+    throw error;
+  }
+};
+
+// Отправка сообщений в чат
 const sendMessage = async (chatId, messageText) => {
   try {
     const response = await $api.post('/message/', {
@@ -69,10 +105,11 @@ const sendMessage = async (chatId, messageText) => {
   }
 };
 
+// Получение сообщений из чата
 const fetchMessages = async (chatId) => {
   try {
     const response = await $api.get(`/messages/?chat=${chatId}`);
-    return response.data; // Возвращаем полученные сообщения
+    return response.data;
   } catch (error) {
     console.error('API Error fetching messages:', error.message);
 
@@ -91,25 +128,7 @@ const fetchMessages = async (chatId) => {
   }
 };
 
-const createChat = async (chatName) => {
-  try {
-    const response = await $api.post('/chats/', { title: chatName.trim() });
-    return response.data;
-  } catch (error) {
-    console.error('Error creating chat:', error.response?.data || error.message);
-    throw error;
-  }
-};
-
-const deleteChat = async (chatId) => {
-  try {
-    await $api.delete(`/chats/${chatId}`);
-  } catch (error) {
-    console.error('API Error deleting chat:', error.message);
-    throw error;
-  }
-};
-
+// Получение списка чатов
 const fetchChats = async () => {
   try {
     const response = await $api.get('/chats/');
@@ -120,6 +139,7 @@ const fetchChats = async () => {
   }
 };
 
+// Создание токена отмены запроса
 const createCancelToken = () => {
   const source = axios.CancelToken.source();
   return source;
