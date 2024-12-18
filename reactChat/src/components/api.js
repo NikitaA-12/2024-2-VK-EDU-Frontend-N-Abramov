@@ -15,6 +15,8 @@ $api.interceptors.request.use(
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      console.warn('Токен авторизации отсутствует.');
     }
     return config;
   },
@@ -77,21 +79,15 @@ const createChat = async (chatName) => {
 // Удаление чата
 const deleteChat = async (chatId) => {
   try {
-    console.log(`Attempting to delete chat with ID: ${chatId}`);
-
     await $api.delete(`/chat/${chatId}/`);
     console.log(`Chat with ID ${chatId} deleted successfully`);
   } catch (error) {
-    if (error.response?.status === 404) {
-      console.error(`Chat with ID ${chatId} not found on server`);
-    } else {
-      console.error('API Error deleting chat:', error.response?.data || error.message);
-    }
+    console.error('Error deleting chat:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Отправка сообщений в чат
+// Отправка сообщения в чат
 const sendMessage = async (chatId, messageText) => {
   try {
     const response = await $api.post('/message/', {
@@ -100,6 +96,9 @@ const sendMessage = async (chatId, messageText) => {
     });
     return response.data;
   } catch (error) {
+    if (error.response?.status === 405) {
+      console.error('Error 405: Method Not Allowed. Проверьте настройки маршрутов на сервере.');
+    }
     console.error('Error sending message:', error.response?.data || error.message);
     throw error;
   }
@@ -111,20 +110,25 @@ const fetchMessages = async (chatId) => {
     const response = await $api.get(`/messages/?chat=${chatId}`);
     return response.data;
   } catch (error) {
-    console.error('API Error fetching messages:', error.message);
-
-    if (error.response) {
-      const status = error.response.status;
-      if (status === 404) {
-        throw new Error('Chat not found');
-      }
-      if (status === 500) {
-        throw new Error('Server error while fetching messages');
-      }
-      throw new Error('Unexpected error occurred while fetching messages');
-    } else {
-      throw new Error('No response from server');
+    if (error.response?.status === 404) {
+      console.error('Error 404: Chat not found.');
     }
+    console.error('Error fetching messages:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Получение текущего пользователя
+const fetchCurrentUser = async () => {
+  try {
+    const response = await $api.get('/user/current/');
+    return response.data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      console.error('Error 404: Current user not found.');
+    }
+    console.error('Error fetching current user:', error.response?.data || error.message);
+    throw error;
   }
 };
 
@@ -154,5 +158,6 @@ export {
   createChat,
   fetchChats,
   deleteChat,
+  fetchCurrentUser,
   createCancelToken,
 };
