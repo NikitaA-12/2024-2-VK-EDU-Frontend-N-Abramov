@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { Centrifuge } from 'centrifuge';
 
-// Настройка базового URL для API
+// Использование базового URL из переменной окружения
+const API_BASE_URL = import.meta.env.VITE_PUBLIC_API;
+
 const $api = axios.create({
-  baseURL: 'https://vkedu-fullstack-div2.ru/api/',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
