@@ -19,7 +19,7 @@ export const ChatProvider = ({ children }) => {
 
   const getToken = () => {
     const token = localStorage.getItem('token');
-    console.log('Retrieved token:', token);
+    console.log('Token retrieved from localStorage:', token);
     return token;
   };
 
@@ -28,26 +28,30 @@ export const ChatProvider = ({ children }) => {
       const token = getToken();
       if (!token) return;
 
+      console.log(`Fetching messages for chatId: ${chatId}`);
+
       const response = await $api.get(`/messages/?chat=${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      console.log('Response data for messages:', response.data);
+
       const fetchedMessages = Array.isArray(response.data?.results) ? response.data.results : [];
-      console.log(`Fetched messages for chat ${chatId}:`, fetchedMessages);
+
+      console.log(`Fetched ${fetchedMessages.length} messages.`);
 
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === chatId ? { ...chat, last_message: fetchedMessages.at(-1) || null } : chat,
         ),
       );
-
-      const updatedChats = chats.map((chat) =>
-        chat.id === chatId ? { ...chat, last_message: fetchedMessages.at(-1) || null } : chat,
-      );
-
-      localStorage.setItem('chats', JSON.stringify(updatedChats));
     } catch (err) {
-      console.error('Failed to fetch messages:', err.message);
+      console.error('Failed to fetch messages for chat', {
+        chatId,
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message,
+      });
     }
   };
 
@@ -59,6 +63,8 @@ export const ChatProvider = ({ children }) => {
         return;
       }
 
+      console.log('Fetching chats from server...');
+
       setIsLoading(true);
       setError(null);
 
@@ -66,6 +72,8 @@ export const ChatProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
         params: { page, page_size: pageSize, search: searchTerm },
       });
+
+      console.log('Server response for fetching chats:', response.data);
 
       const adaptedChats = Array.isArray(response.data?.results)
         ? response.data.results.map((chat) => ({
@@ -82,7 +90,7 @@ export const ChatProvider = ({ children }) => {
           }))
         : [];
 
-      console.log('Fetched chats from server:', adaptedChats);
+      console.log('Adapted chats:', adaptedChats);
 
       setChats(adaptedChats);
       localStorage.setItem('chats', JSON.stringify(adaptedChats));
@@ -90,17 +98,8 @@ export const ChatProvider = ({ children }) => {
       console.error('Ошибка загрузки чатов:', {
         status: err.response?.status,
         message: err.message,
+        data: err.response?.data,
       });
-
-      try {
-        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
-        if (Array.isArray(storedChats)) {
-          setChats(storedChats);
-          console.log('Loaded chats from local storage');
-        }
-      } catch (storageError) {
-        console.error('Error reading from localStorage:', storageError);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -141,28 +140,19 @@ export const ChatProvider = ({ children }) => {
       const token = getToken();
       if (!token) return;
 
-      const chatsData = JSON.parse(localStorage.getItem('chats') || '[]');
-
-      const members = chatsData
-        .flatMap((chat) => chat.members.map((member) => member.id))
-        .filter(Boolean);
-
-      const uniqueMembers = Array.from(new Set([...members, ...membersArray]));
-
-      if (uniqueMembers.length === 0) {
-        setError('Добавьте участников для создания чата.');
-        return;
-      }
+      console.log('Creating chat with title:', title, 'isPrivate:', isPrivate);
 
       const response = await $api.post(
         '/chats/',
         {
           title: title.trim(),
-          members: uniqueMembers.slice(0, 100),
+          members: membersArray,
           is_private: isPrivate,
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+
+      console.log('Chat creation response:', response.data);
 
       const newChat = {
         ...response.data,
@@ -170,14 +160,17 @@ export const ChatProvider = ({ children }) => {
         updated_at: new Date(response.data.updated_at),
       };
 
-      const updatedChats = [newChat, ...chatsData];
-      localStorage.setItem('chats', JSON.stringify(updatedChats));
-      setChats(updatedChats);
+      console.log('New chat data:', newChat);
 
-      console.log('Chats updated and stored in localStorage:', updatedChats);
-    } catch (error) {
-      console.error('Failed to create chat:', error.message);
-      setError('Failed to create chat');
+      const updatedChats = [newChat, ...chats];
+      setChats(updatedChats);
+      localStorage.setItem('chats', JSON.stringify(updatedChats));
+    } catch (err) {
+      console.error('Failed to create chat:', {
+        status: err.response?.status,
+        message: err.message,
+        data: err.response?.data,
+      });
     }
   };
 
