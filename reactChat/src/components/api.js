@@ -142,12 +142,6 @@ const fetchChats = async () => {
   }
 };
 
-// Создание токена отмены запроса
-const createCancelToken = () => {
-  const source = axios.CancelToken.source();
-  return source;
-};
-
 // Функция для получения токена из localStorage
 const getToken = () => localStorage.getItem('token');
 
@@ -161,6 +155,5 @@ export {
   createChat,
   fetchChats,
   deleteChat,
-  createCancelToken,
   getToken,
 };
