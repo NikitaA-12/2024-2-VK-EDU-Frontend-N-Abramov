@@ -1,72 +1,41 @@
 import axios from 'axios';
 import { Centrifuge } from 'centrifuge';
 
-// Определяем, в какой среде запущено приложение
-const isProduction = import.meta.env.MODE === 'production';
-
-const baseURL = isProduction
-  ? 'https://vkedu-fullstack-div2.ru/api/'
-  : 'http://localhost:8000/api/';
-
 // Базовая настройка Axios
 const $api = axios.create({
-  baseURL,
+  baseURL: 'https://vkedu-fullstack-div2.ru/api/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Интерсепторы для обработки запросов
+// Интерсепторы для обработки запросов и ответов
 $api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    console.log('[API Request]', {
-      method: config.method,
-      url: config.url,
-      params: config.params,
-      data: config.data,
-    });
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-    } else {
-      console.warn('Токен авторизации отсутствует.');
     }
     return config;
   },
   (error) => {
-    console.error('[API Request Error]', error.message);
+    console.error('Request error:', error.message);
     return Promise.reject(error);
   },
 );
 
-// Интерсепторы для обработки ответов
 $api.interceptors.response.use(
-  (response) => {
-    console.log('[API Response]', {
-      status: response.status,
-      data: response.data,
-    });
-    return response;
-  },
+  (response) => response,
   (error) => {
     const status = error.response?.status;
-    console.error('[API Response Error]', {
-      status,
-      data: error.response?.data || error.message,
-    });
-
-    switch (status) {
-      case 401:
-        console.warn('Unauthorized: токен истёк или отсутствует.');
-        break;
-      case 404:
-        console.error('Resource not found:', error.response?.data);
-        break;
-      case 500:
-      default:
-        console.error('Server error:', error.response?.data || error.message);
-        break;
+    if (status === 401) {
+      console.warn('Unauthorized: токен истёк или отсутствует.');
+    } else if (status >= 500) {
+      console.error('Server error:', error.response?.data || error.message);
+    } else if (status === 404) {
+      console.error('Resource not found:', error.response?.data);
+    } else {
+      console.error('Response error:', error.response?.data || error.message);
     }
     return Promise.reject(error);
   },
@@ -78,7 +47,6 @@ const initAndStartCentrifugo = (chatId, onMessage) => {
   centrifuge.connect();
 
   const subscription = centrifuge.subscribe(`chat:${chatId}`, (message) => {
-    console.log('[Centrifugo Message]', message);
     if (message.data) {
       onMessage(message.data);
     }
@@ -95,80 +63,83 @@ const initAndStartCentrifugo = (chatId, onMessage) => {
   return { centrifuge, subscription };
 };
 
-// Функции API
-
+// Создание чата
 const createChat = async (chatName) => {
   try {
-    console.log('[Create Chat]', { chatName });
     const response = await $api.post('/chats/', { title: chatName.trim() });
-    console.log('[Create Chat Response]', response.data);
     return response.data;
   } catch (error) {
-    console.error('[Create Chat Error]', error.response?.data || error.message);
+    console.error('Error creating chat:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Удаление чата
 const deleteChat = async (chatId) => {
   try {
-    console.log(`[Delete Chat] Chat ID: ${chatId}`);
+    console.log(`Attempting to delete chat with ID: ${chatId}`);
+
     await $api.delete(`/chat/${chatId}/`);
     console.log(`Chat with ID ${chatId} deleted successfully`);
   } catch (error) {
-    console.error('[Delete Chat Error]', error.response?.data || error.message);
+    if (error.response?.status === 404) {
+      console.error(`Chat with ID ${chatId} not found on server`);
+    } else {
+      console.error('API Error deleting chat:', error.response?.data || error.message);
+    }
     throw error;
   }
 };
 
+// Отправка сообщений в чат
 const sendMessage = async (chatId, messageText) => {
   try {
-    console.log('[Send Message]', { chatId, messageText });
-    const response = await $api.post('/message/', { chat_id: chatId, text: messageText });
-    console.log('[Send Message Response]', response.data);
+    const response = await $api.post('/message/', {
+      chat_id: chatId,
+      text: messageText,
+    });
     return response.data;
   } catch (error) {
-    console.error('[Send Message Error]', error.response?.data || error.message);
+    console.error('Error sending message:', error.response?.data || error.message);
     throw error;
   }
 };
 
+// Получение сообщений из чата
 const fetchMessages = async (chatId) => {
   try {
-    console.log('[Fetch Messages]', { chatId });
     const response = await $api.get(`/messages/?chat=${chatId}`);
-    console.log('[Fetch Messages Response]', response.data);
     return response.data;
   } catch (error) {
-    console.error('[Fetch Messages Error]', error.response?.data || error.message);
-    throw error;
+    console.error('API Error fetching messages:', error.message);
+
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 404) {
+        throw new Error('Chat not found');
+      }
+      if (status === 500) {
+        throw new Error('Server error while fetching messages');
+      }
+      throw new Error('Unexpected error occurred while fetching messages');
+    } else {
+      throw new Error('No response from server');
+    }
   }
 };
 
-const fetchCurrentUser = async () => {
-  try {
-    console.log('[Fetch Current User]');
-    const response = await $api.get('/user/current/');
-    console.log('[Current User Response]', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('[Fetch Current User Error]', error.response?.data || error.message);
-    throw error;
-  }
-};
-
+// Получение списка чатов
 const fetchChats = async () => {
   try {
-    console.log('[Fetch Chats]');
     const response = await $api.get('/chats/');
-    console.log('[Fetch Chats Response]', response.data);
     return response.data.results;
   } catch (error) {
-    console.error('[Fetch Chats Error]', error.response?.data || error.message);
+    console.error('Error fetching chats:', error.message);
     throw error;
   }
 };
 
-// Создание токена отмены запросов
+// Создание токена отмены запроса
 const createCancelToken = () => {
   const source = axios.CancelToken.source();
   return source;
@@ -183,6 +154,5 @@ export {
   createChat,
   fetchChats,
   deleteChat,
-  fetchCurrentUser,
   createCancelToken,
 };

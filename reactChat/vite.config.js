@@ -1,21 +1,20 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// Определение base для деплоя на GitHub Pages
-const isProduction = process.env.NODE_ENV === 'production';
-const base = isProduction ? '/2024-2-VK-EDU-Frontend-N-Abramov/' : '/';
-
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base,
+  base: '/2024-2-VK-EDU-Frontend-N-Abramov/',
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'https://vkedu-fullstack-div2.ru', // Удаленный сервер API
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        secure: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
+    },
+    watch: {
+      usePolling: true,
     },
   },
 });
