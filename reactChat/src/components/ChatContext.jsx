@@ -32,7 +32,7 @@ export const ChatProvider = ({ children }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const fetchedMessages = response.data?.results || [];
+      const fetchedMessages = Array.isArray(response.data?.results) ? response.data.results : [];
       console.log(`Fetched messages for chat ${chatId}:`, fetchedMessages);
 
       setChats((prevChats) =>
@@ -40,8 +40,7 @@ export const ChatProvider = ({ children }) => {
           chat.id === chatId
             ? {
                 ...chat,
-                last_message:
-                  fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1] : null,
+                last_message: fetchedMessages.at(-1) || null,
               }
             : chat,
         ),
@@ -51,15 +50,14 @@ export const ChatProvider = ({ children }) => {
         chat.id === chatId
           ? {
               ...chat,
-              last_message:
-                fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1] : null,
+              last_message: fetchedMessages.at(-1) || null,
             }
           : chat,
       );
 
       localStorage.setItem('chats', JSON.stringify(updatedChats));
     } catch (err) {
-      console.error('Failed to fetch messages', err.message);
+      console.error('Failed to fetch messages:', err.message);
     }
   };
 
@@ -79,19 +77,20 @@ export const ChatProvider = ({ children }) => {
         params: { page, page_size: pageSize, search: searchTerm },
       });
 
-      const adaptedChats =
-        response.data?.results?.map((chat) => ({
-          id: chat.id,
-          title: chat.title,
-          members: chat.members,
-          creator: chat.creator,
-          avatar: chat.avatar,
-          created_at: new Date(chat.created_at),
-          updated_at: new Date(chat.updated_at),
-          is_private: chat.is_private,
-          last_message: chat.last_message,
-          unread_messages_count: parseInt(chat.unread_messages_count, 10) || 0,
-        })) || [];
+      const adaptedChats = Array.isArray(response.data?.results)
+        ? response.data.results.map((chat) => ({
+            id: chat.id,
+            title: chat.title,
+            members: chat.members,
+            creator: chat.creator,
+            avatar: chat.avatar,
+            created_at: new Date(chat.created_at),
+            updated_at: new Date(chat.updated_at),
+            is_private: chat.is_private,
+            last_message: chat.last_message,
+            unread_messages_count: parseInt(chat.unread_messages_count, 10) || 0,
+          }))
+        : [];
 
       console.log('Fetched chats from server:', adaptedChats);
 
@@ -104,8 +103,8 @@ export const ChatProvider = ({ children }) => {
       });
 
       try {
-        const storedChats = JSON.parse(localStorage.getItem('chats'));
-        if (storedChats && Array.isArray(storedChats)) {
+        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
+        if (Array.isArray(storedChats)) {
           setChats(storedChats);
           console.log('Loaded chats from local storage');
         }
@@ -118,12 +117,10 @@ export const ChatProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const storedChats = localStorage.getItem('chats');
-    if (storedChats) {
-      const chatsFromStorage = JSON.parse(storedChats);
-      setChats(chatsFromStorage);
-
-      chatsFromStorage.forEach((chat) => {
+    const storedChats = JSON.parse(localStorage.getItem('chats') || '[]');
+    if (Array.isArray(storedChats)) {
+      setChats(storedChats);
+      storedChats.forEach((chat) => {
         if (chat.last_message) {
           console.log(
             `Loaded chat from localStorage: "${chat.title}" - Last message content: "${chat.last_message.content}"`,
@@ -143,13 +140,6 @@ export const ChatProvider = ({ children }) => {
 
     try {
       await fetchMessages(chatId);
-
-      const selectedChat = chats.find((chat) => chat.id === chatId);
-      if (selectedChat && selectedChat.last_message) {
-        console.log(
-          `Chat "${selectedChat.title}" - Last message content: "${selectedChat.last_message.content}", Time: ${selectedChat.last_message.time}`,
-        );
-      }
     } catch (error) {
       console.error('Ошибка загрузки сообщений после выбора чата:', error.message);
       setError('Ошибка загрузки сообщений');
@@ -161,11 +151,11 @@ export const ChatProvider = ({ children }) => {
       const token = getToken();
       if (!token) return;
 
-      const chatsData = JSON.parse(localStorage.getItem('chats')) || [];
+      const chatsData = JSON.parse(localStorage.getItem('chats') || '[]');
 
       const members = chatsData
         .flatMap((chat) => chat.members.map((member) => member.id))
-        .filter((id) => id);
+        .filter(Boolean);
 
       const uniqueMembers = Array.from(new Set([...members, ...membersArray]));
 
