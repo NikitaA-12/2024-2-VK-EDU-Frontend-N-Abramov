@@ -4,6 +4,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
 import axios from 'axios';
 import { useChatData } from './ChatContext';
+import { getToken } from './api';
 
 const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
   const { currentChatId, chats, setChats } = useChatData();
@@ -13,14 +14,12 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
   const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const getToken = () => localStorage.getItem('token');
-
   const fetchCurrentUser = async () => {
     const token = getToken();
     if (!token) return;
 
     try {
-      const response = await axios.get('/api/user/current/', {
+      const response = await axios.get('/user/current/', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUser(response.data);
@@ -35,7 +34,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
       const token = getToken();
       if (!token) return;
 
-      const response = await axios.get('/api/messages/', {
+      const response = await axios.get('/messages/', {
         params: {
           chat: currentChatId,
           page: 1,
@@ -103,12 +102,11 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
     };
 
     try {
-      const response = await axios.post('/api/messages/', newMessage, {
+      const response = await axios.post('/messages/', newMessage, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.status === 201) {
-        // Обновляем сообщения в интерфейсе
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages, newMessage].sort(
             (a, b) => new Date(a.created_at) - new Date(b.created_at),
