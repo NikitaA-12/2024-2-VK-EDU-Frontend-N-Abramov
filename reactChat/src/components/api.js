@@ -1,53 +1,49 @@
 import axios from 'axios';
 import { Centrifuge } from 'centrifuge';
 
-// Использование базового URL из переменной окружения
-const API_BASE_URL = import.meta.env.VITE_PUBLIC_API;
-
+// Базовая настройка Axios
 const $api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'https://vkedu-fullstack-div2.ru/api/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Интерсепторы для обработки запросов
+// Интерсепторы для обработки запросов и ответов
 $api.interceptors.request.use(
   (config) => {
-    const token = getToken();
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
   (error) => {
-    console.error('Ошибка в запросе:', error.message);
+    console.error('Request error:', error.message);
     return Promise.reject(error);
   },
 );
 
-// Интерсепторы для обработки ответов
 $api.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error.response?.status;
     if (status === 401) {
-      console.warn('Ошибка авторизации: токен истёк или отсутствует.');
+      console.warn('Unauthorized: токен истёк или отсутствует.');
     } else if (status >= 500) {
-      console.error('Ошибка сервера:', error.response?.data || error.message);
+      console.error('Server error:', error.response?.data || error.message);
     } else if (status === 404) {
-      console.error('Ресурс не найден:', error.response?.data);
+      console.error('Resource not found:', error.response?.data);
     } else {
-      console.error('Ошибка ответа:', error.response?.data || error.message);
+      console.error('Response error:', error.response?.data || error.message);
     }
     return Promise.reject(error);
   },
 );
 
-// Инициализация и подключение к Centrifugo
+// WebSocket с использованием Centrifuge
 const initAndStartCentrifugo = (chatId, onMessage) => {
   const centrifuge = new Centrifuge('wss://vkedu-fullstack-div2.ru/connection/websocket/');
-
   centrifuge.connect();
 
   const subscription = centrifuge.subscribe(`chat:${chatId}`, (message) => {
@@ -57,44 +53,45 @@ const initAndStartCentrifugo = (chatId, onMessage) => {
   });
 
   subscription.on('error', (err) => {
-    console.error(`Ошибка подписки на чат ${chatId}:`, err);
+    console.error(`Centrifugo subscription error for chat:${chatId}`, err);
   });
 
   subscription.on('subscribe', () => {
-    console.log(`Подписка на чат ${chatId} успешно выполнена.`);
+    console.log(`Subscribed to chat:${chatId}`);
   });
 
   return { centrifuge, subscription };
 };
 
-// Функция создания чата
+// Создание чата
 const createChat = async (chatName) => {
   try {
     const response = await $api.post('/chats/', { title: chatName.trim() });
     return response.data;
   } catch (error) {
-    console.error('Ошибка создания чата:', error.response?.data || error.message);
+    console.error('Error creating chat:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Функция удаления чата
+// Удаление чата
 const deleteChat = async (chatId) => {
   try {
-    console.log(`Попытка удаления чата с ID: ${chatId}`);
+    console.log(`Attempting to delete chat with ID: ${chatId}`);
+
     await $api.delete(`/chat/${chatId}/`);
-    console.log(`Чат с ID ${chatId} успешно удалён.`);
+    console.log(`Chat with ID ${chatId} deleted successfully`);
   } catch (error) {
     if (error.response?.status === 404) {
-      console.error(`Чат с ID ${chatId} не найден.`);
+      console.error(`Chat with ID ${chatId} not found on server`);
     } else {
-      console.error('Ошибка удаления чата:', error.response?.data || error.message);
+      console.error('API Error deleting chat:', error.response?.data || error.message);
     }
     throw error;
   }
 };
 
-// Отправка сообщения в чат
+// Отправка сообщений в чат
 const sendMessage = async (chatId, messageText) => {
   try {
     const response = await $api.post('/message/', {
@@ -103,7 +100,7 @@ const sendMessage = async (chatId, messageText) => {
     });
     return response.data;
   } catch (error) {
-    console.error('Ошибка отправки сообщения:', error.response?.data || error.message);
+    console.error('Error sending message:', error.response?.data || error.message);
     throw error;
   }
 };
@@ -114,19 +111,19 @@ const fetchMessages = async (chatId) => {
     const response = await $api.get(`/messages/?chat=${chatId}`);
     return response.data;
   } catch (error) {
-    console.error('Ошибка получения сообщений:', error.message);
+    console.error('API Error fetching messages:', error.message);
 
     if (error.response) {
       const status = error.response.status;
       if (status === 404) {
-        throw new Error('Чат не найден.');
+        throw new Error('Chat not found');
       }
       if (status === 500) {
-        throw new Error('Ошибка сервера при получении сообщений.');
+        throw new Error('Server error while fetching messages');
       }
-      throw new Error('Неожиданная ошибка при получении сообщений.');
+      throw new Error('Unexpected error occurred while fetching messages');
     } else {
-      throw new Error('Ответ от сервера отсутствует.');
+      throw new Error('No response from server');
     }
   }
 };
@@ -137,16 +134,18 @@ const fetchChats = async () => {
     const response = await $api.get('/chats/');
     return response.data.results;
   } catch (error) {
-    console.error('Ошибка получения списка чатов:', error.message);
+    console.error('Error fetching chats:', error.message);
     throw error;
   }
 };
 
-// Функция для получения токена из localStorage
-const getToken = () => localStorage.getItem('token');
+// Создание токена отмены запроса
+const createCancelToken = () => {
+  const source = axios.CancelToken.source();
+  return source;
+};
 
 export default $api;
-
 export {
   $api,
   initAndStartCentrifugo,
@@ -155,5 +154,5 @@ export {
   createChat,
   fetchChats,
   deleteChat,
-  getToken,
+  createCancelToken,
 };

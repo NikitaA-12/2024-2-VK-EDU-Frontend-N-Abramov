@@ -21,11 +21,6 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
   };
 
   useEffect(() => {
-    if (!Array.isArray(chats)) {
-      console.error('Chats is not an array:', chats);
-      return;
-    }
-
     const updatedChats = [...chats].sort((a, b) => {
       const lastMessageA = a.last_message?.created_at
         ? new Date(a.last_message.created_at).getTime()
@@ -90,13 +85,9 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
     }
   };
 
-  const filteredChats = Array.isArray(chats)
+  const filteredChats = searchTerm
     ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    : [];
-
-  if (!Array.isArray(filteredChats)) {
-    console.error('Filtered chats is not an array:', filteredChats);
-  }
+    : chats;
 
   const formatTime = (isoString) => {
     const date = new Date(isoString);
