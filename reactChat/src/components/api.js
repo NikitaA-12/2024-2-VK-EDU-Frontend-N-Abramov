@@ -14,7 +14,7 @@ const $api = axios.create({
 // Интерсепторы для обработки запросов
 $api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -47,6 +47,7 @@ $api.interceptors.response.use(
 // Инициализация и подключение к Centrifugo
 const initAndStartCentrifugo = (chatId, onMessage) => {
   const centrifuge = new Centrifuge('wss://vkedu-fullstack-div2.ru/connection/websocket/');
+
   centrifuge.connect();
 
   const subscription = centrifuge.subscribe(`chat:${chatId}`, (message) => {
@@ -147,7 +148,11 @@ const createCancelToken = () => {
   return source;
 };
 
+// Функция для получения токена из localStorage
+const getToken = () => localStorage.getItem('token');
+
 export default $api;
+
 export {
   $api,
   initAndStartCentrifugo,
@@ -157,4 +162,5 @@ export {
   fetchChats,
   deleteChat,
   createCancelToken,
+  getToken,
 };
