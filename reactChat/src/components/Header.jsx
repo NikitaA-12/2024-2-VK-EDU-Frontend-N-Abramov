@@ -25,7 +25,6 @@ const Header = ({ searchTerm, setSearchTerm, onSearch }) => {
 Header.propTypes = {
   searchTerm: PropTypes.string.isRequired,
   setSearchTerm: PropTypes.func.isRequired,
-  onSearch: PropTypes.func.isRequired,
   onProfileClick: PropTypes.func.isRequired,
 };
 

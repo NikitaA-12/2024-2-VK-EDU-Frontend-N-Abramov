@@ -1,91 +1,221 @@
 import { createContext, useState, useContext, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { initialChatData } from './chat-data';
+import { $api } from './api';
 
-// Создание контекста для чатов
 const ChatContext = createContext();
 
-// Хук для использования данных контекста
 export const useChatData = () => useContext(ChatContext);
 
-// Провайдер для управления данными чатов
 export const ChatProvider = ({ children }) => {
-  const [searchTerm, setSearchTerm] = useState(''); // Хранение текущего текста поиска
-  const [chats, setChats] = useState(() => {
+  const [chats, setChats] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedChatId, setSelectedChatId] = useState(null);
+  const [currentChatId, setCurrentChatId] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const getToken = () => {
+    const token = localStorage.getItem('token');
+    console.log('Retrieved token:', token);
+    return token;
+  };
+
+  const fetchMessages = async (chatId) => {
     try {
-      const storedChats = JSON.parse(localStorage.getItem('chats'));
-      if (storedChats && Array.isArray(storedChats.chats)) {
-        return storedChats.chats;
+      const token = getToken();
+      if (!token) return;
+
+      const response = await $api.get(`/messages/?chat=${chatId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const fetchedMessages = response.data?.results || [];
+      console.log(`Fetched messages for chat ${chatId}:`, fetchedMessages);
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId
+            ? {
+                ...chat,
+                last_message:
+                  fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1] : null,
+              }
+            : chat,
+        ),
+      );
+
+      const updatedChats = chats.map((chat) =>
+        chat.id === chatId
+          ? {
+              ...chat,
+              last_message:
+                fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1] : null,
+            }
+          : chat,
+      );
+
+      localStorage.setItem('chats', JSON.stringify(updatedChats));
+    } catch (err) {
+      console.error('Failed to fetch messages', err.message);
+    }
+  };
+
+  const fetchChats = async () => {
+    try {
+      const token = getToken();
+      if (!token) {
+        setError('Token отсутствует');
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      const response = await $api.get('/chats/', {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page, page_size: pageSize, search: searchTerm },
+      });
+
+      const adaptedChats =
+        response.data?.results?.map((chat) => ({
+          id: chat.id,
+          title: chat.title,
+          members: chat.members,
+          creator: chat.creator,
+          avatar: chat.avatar,
+          created_at: new Date(chat.created_at),
+          updated_at: new Date(chat.updated_at),
+          is_private: chat.is_private,
+          last_message: chat.last_message,
+          unread_messages_count: parseInt(chat.unread_messages_count, 10) || 0,
+        })) || [];
+
+      console.log('Fetched chats from server:', adaptedChats);
+
+      setChats(adaptedChats);
+      localStorage.setItem('chats', JSON.stringify(adaptedChats));
+    } catch (err) {
+      console.error('Ошибка загрузки чатов:', {
+        status: err.response?.status,
+        message: err.message,
+      });
+
+      try {
+        const storedChats = JSON.parse(localStorage.getItem('chats'));
+        if (storedChats && Array.isArray(storedChats)) {
+          setChats(storedChats);
+          console.log('Loaded chats from local storage');
+        }
+      } catch (storageError) {
+        console.error('Error reading from localStorage:', storageError);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const storedChats = localStorage.getItem('chats');
+    if (storedChats) {
+      const chatsFromStorage = JSON.parse(storedChats);
+      setChats(chatsFromStorage);
+
+      chatsFromStorage.forEach((chat) => {
+        if (chat.last_message) {
+          console.log(
+            `Loaded chat from localStorage: "${chat.title}" - Last message content: "${chat.last_message.content}"`,
+          );
+        }
+      });
+    } else {
+      fetchChats();
+    }
+  }, []);
+
+  const onChatSelect = async (chatId) => {
+    setSelectedChatId(chatId);
+    setCurrentChatId(chatId);
+
+    console.log(`Selecting chat ${chatId}`);
+
+    try {
+      await fetchMessages(chatId);
+
+      const selectedChat = chats.find((chat) => chat.id === chatId);
+      if (selectedChat && selectedChat.last_message) {
+        console.log(
+          `Chat "${selectedChat.title}" - Last message content: "${selectedChat.last_message.content}", Time: ${selectedChat.last_message.time}`,
+        );
       }
     } catch (error) {
-      console.error('Ошибка чтения данных из localStorage:', error);
+      console.error('Ошибка загрузки сообщений после выбора чата:', error.message);
+      setError('Ошибка загрузки сообщений');
     }
-    return initialChatData.chats; // Возвращаем начальные данные, если ничего нет в localStorage
-  });
+  };
 
-  const [selectedChatId, setSelectedChatId] = useState(null); // Хранение выбранного чата
-
-  // Сохраняем чаты в localStorage при каждом изменении
-  useEffect(() => {
+  const createChat = async (title, isPrivate, membersArray = []) => {
     try {
-      localStorage.setItem('chats', JSON.stringify({ chats }));
-    } catch (error) {
-      console.error('Ошибка записи данных в localStorage:', error);
-    }
-  }, [chats]);
+      const token = getToken();
+      if (!token) return;
 
-  // Добавление нового чата
-  const addChat = (chatName) => {
-    const newChat = {
-      chatId: chats.length > 0 ? Math.max(...chats.map((chat) => chat.chatId)) + 1 : 1,
-      chatName,
-      participants: [chatName, 'You'],
-      messages: [],
-    };
-    setChats((prevChats) => [newChat, ...prevChats]);
-  };
+      const chatsData = JSON.parse(localStorage.getItem('chats')) || [];
 
-  // Обновление существующего чата
-  const updateChat = (updatedChat) => {
-    setChats((prevChats) => {
-      const updated = prevChats.map((chat) =>
-        chat.chatId === updatedChat.chatId ? updatedChat : chat,
+      const members = chatsData
+        .flatMap((chat) => chat.members.map((member) => member.id))
+        .filter((id) => id);
+
+      const uniqueMembers = Array.from(new Set([...members, ...membersArray]));
+
+      if (uniqueMembers.length === 0) {
+        setError('Добавьте участников для создания чата.');
+        return;
+      }
+
+      const response = await $api.post(
+        '/chats/',
+        {
+          title: title.trim(),
+          members: uniqueMembers.slice(0, 100),
+          is_private: isPrivate,
+        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      localStorage.setItem('chats', JSON.stringify({ chats: updated })); // Сохраняем изменения
-      return updated;
-    });
-  };
 
-  // Удаление чата
-  const deleteChat = (chatId) => {
-    setChats((prevChats) => prevChats.filter((chat) => chat.chatId !== chatId));
-    if (selectedChatId === chatId) {
-      setSelectedChatId(null); // Сбрасываем выбранный чат, если он удален
+      const newChat = {
+        ...response.data,
+        created_at: new Date(response.data.created_at),
+        updated_at: new Date(response.data.updated_at),
+      };
+
+      const updatedChats = [newChat, ...chatsData];
+      localStorage.setItem('chats', JSON.stringify(updatedChats));
+      setChats(updatedChats);
+
+      console.log('Chats updated and stored in localStorage:', updatedChats);
+    } catch (error) {
+      console.error('Failed to create chat:', error.message);
+      setError('Failed to create chat');
     }
   };
-
-  // Выбор чата
-  const onChatSelect = (chatId) => {
-    setSelectedChatId(chatId);
-  };
-
-  // Фильтрация чатов по поисковому запросу
-  const filteredChats = chats.filter((chat) =>
-    chat.chatName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
 
   return (
     <ChatContext.Provider
       value={{
         searchTerm,
         setSearchTerm,
-        chats: filteredChats,
+        chats,
         setChats,
-        addChat,
-        updateChat,
-        deleteChat,
+        messages,
+        currentChatId,
+        setCurrentChatId,
+        createChat,
         onChatSelect,
-        selectedChatId,
+        fetchChats,
+        isLoading,
+        error,
       }}>
       {children}
     </ChatContext.Provider>

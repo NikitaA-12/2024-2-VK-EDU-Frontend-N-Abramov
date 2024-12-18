@@ -4,7 +4,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Open Sans', sans-serif; /* Применяем Open Sans ко всем элементам */
 }
 
 body {
@@ -13,6 +13,8 @@ body {
   align-items: center;
   min-height: 100vh;
   background-color: #f0f0f0;
+  font-family: 'Open Sans', sans-serif;
+  font-weight: 400;
 }
 
 .container {
@@ -22,6 +24,7 @@ body {
   background: #fff;
   box-shadow: 0 5px 5px rgba(0, 0, 0, 0.15);
   overflow: hidden;
+  font-family: 'Open Sans', sans-serif;
 }
 
 header {
@@ -31,14 +34,15 @@ header {
   justify-content: space-between;
   align-items: center;
   height: 60px;
-}
 
-header .logo {
-  color: #fff;
-  text-decoration: none;
-  text-transform: uppercase;
-  font-weight: 800;
-  font-size: 1.2em;
+  .logo {
+    color: #fff;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: 800;
+    font-size: 1.2em;
+    font-family: 'Open Sans', sans-serif;
+  }
 }
 
 .action-container {
@@ -48,23 +52,7 @@ header .logo {
   margin-left: auto;
 }
 
-/* Кнопка профиля */
-.profile-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #fff;
-  font-size: 1.5em;
-  transition: color 0.3s;
-}
-
-.profile-btn:hover {
-  color: #d4d4d4;
-}
-
+.profile-btn,
 .search-btn {
   display: flex;
   align-items: center;
@@ -75,21 +63,23 @@ header .logo {
   color: #fff;
   font-size: 1.5em;
   transition: color 0.3s;
-}
+  font-weight: 600;
 
-.search-btn:hover {
-  color: #d4d4d4;
+  &:hover {
+    color: #d4d4d4;
+  }
 }
 
 .content {
   display: flex;
   width: 100%;
-}
 
-.content .data {
-  width: 100%;
-  height: 510px;
-  overflow-y: auto;
+  .data {
+    width: 100%;
+    height: 510px;
+    overflow-y: auto;
+    font-family: 'Open Sans', sans-serif;
+  }
 }
 
 .message_p b {
@@ -102,6 +92,8 @@ header .logo {
   justify-content: center;
   align-items: center;
   font-size: 0.75em;
+  font-weight: bold;
+  font-family: 'Open Sans', sans-serif;
 }
 
 ::-webkit-scrollbar {
@@ -116,25 +108,25 @@ header .logo {
   position: absolute;
   bottom: 10px;
   right: 10px;
-}
 
-.quickBtn .createChatButton {
-  background: #6b7df4;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  font-size: 1.5em;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  border: none;
-  transition: color 0.3s, transform 0.3s;
-}
+  .createChatButton {
+    background: #6b7df4;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    font-size: 1.5em;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    border: none;
+    transition: color 0.3s, transform 0.3s;
 
-.quickBtn .createChatButton:hover {
-  background-color: #566cff;
-  transform: scale(1.1);
+    &:hover {
+      background-color: #566cff;
+      transform: scale(1.1);
+    }
+  }
 }

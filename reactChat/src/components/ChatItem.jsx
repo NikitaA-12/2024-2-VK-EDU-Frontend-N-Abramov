@@ -1,79 +1,39 @@
-import { useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import avatar1 from '../assets/1.png';
-import avatar2 from '../assets/2.png';
+import { useChatData } from './ChatContext';
 
-const avatars = {
-  1: avatar1,
-  2: avatar2,
-};
+const ChatItem = ({ chat, isActive, onClick, onDelete, isDeleting }) => {
+  const { setChats } = useChatData();
 
-const formatTime = (isoString) => {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-};
+  const lastMessageContent = chat.last_message?.text || 'Нет сообщений';
+  const lastMessageTime = chat.last_message?.time;
 
-const ChatItem = ({ chat, onChatClick, onDelete, isNew = false }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const firstLetter = chat.participants[0].charAt(0).toUpperCase();
-  const lastMessageTime = chat.messages.length
-    ? formatTime(chat.messages[chat.messages.length - 1].time)
-    : '';
-  const lastMessageContent = chat.messages.length
-    ? chat.messages[chat.messages.length - 1].content
-    : 'Нет сообщений';
-
-  const avatarSrc = avatars[chat.chatId];
-
-  // Обработчик ошибок загрузки аватара
-  const handleAvatarError = useCallback(
-    (e) => {
-      console.warn(`Ошибка загрузки аватара для chatId: ${chat.chatId}`);
-      e.target.style.display = 'none'; // Скрыть изображение при ошибке загрузки
-    },
-    [chat.chatId],
-  );
-
-  useEffect(() => {
-    if (isNew) {
-      setIsVisible(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isNew]);
-
-  const handleDelete = (e) => {
-    e.stopPropagation(); //
-    setIsDeleting(true);
-
-    setTimeout(() => {
-      onDelete(chat.chatId);
-    }, 300);
-  };
-
-  const handleClick = () => {
-    onChatClick(chat, avatarSrc, firstLetter);
+  const handleMessageUpdate = (newMessage) => {
+    setChats((prevChats) =>
+      prevChats.map((updatedChat) =>
+        updatedChat.id === chat.id
+          ? {
+              ...updatedChat,
+              last_message: newMessage,
+            }
+          : updatedChat,
+      ),
+    );
   };
 
   return (
-    <div
-      className={`block ${isNew && isVisible ? 'fadeIn' : ''} ${isDeleting ? 'fadeOut' : ''}`}
-      onClick={handleClick}>
+    <div className={`block ${isDeleting ? 'fadeOut' : ''}`} onClick={onClick}>
       <div className="imgBx">
-        {avatarSrc ? (
+        {chat.avatar ? (
           <img
-            id={`chatAvatar${chat.chatId}`}
             className="chatAvatar"
-            src={avatarSrc}
+            src={chat.avatar}
             alt="Chat avatar"
-            onError={handleAvatarError}
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
           />
         ) : (
           <div
@@ -89,22 +49,35 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew = false }) => {
               color: '#fafafa',
               backgroundColor: '#8f9efe',
             }}>
-            {firstLetter}
+            {chat.title.charAt(0).toUpperCase()}
           </div>
         )}
       </div>
+
       <div className="details">
         <div className="listHead">
-          <h4>{chat.participants[0]}</h4>
+          <h4>{chat.title}</h4>
+
           <div className="time-delete-wrapper">
-            <IconButton className="delete-chat" onClick={handleDelete} size="small">
+            <IconButton
+              className="delete-chat"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              size="small">
               <DeleteIcon fontSize="small" />
             </IconButton>
+
             <p className="time">{lastMessageTime}</p>
           </div>
         </div>
+
         <div className="message_p">
           <p>{lastMessageContent}</p>
+          {chat.unread_messages_count > 0 && (
+            <span className="unread-count">{chat.unread_messages_count}</span>
+          )}
           <DoneAllIcon fontSize="small" className="read" />
         </div>
       </div>
@@ -114,13 +87,19 @@ const ChatItem = ({ chat, onChatClick, onDelete, isNew = false }) => {
 
 ChatItem.propTypes = {
   chat: PropTypes.shape({
-    chatId: PropTypes.number.isRequired,
-    participants: PropTypes.array.isRequired,
-    messages: PropTypes.array.isRequired,
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    avatar: PropTypes.string,
+    last_message: PropTypes.shape({
+      time: PropTypes.string,
+      text: PropTypes.string,
+    }),
+    unread_messages_count: PropTypes.number,
   }).isRequired,
-  onChatClick: PropTypes.func.isRequired,
+  isActive: PropTypes.bool,
+  onClick: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
-  isNew: PropTypes.bool,
+  isDeleting: PropTypes.bool,
 };
 
 export default ChatItem;

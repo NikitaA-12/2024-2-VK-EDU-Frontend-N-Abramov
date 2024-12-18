@@ -1,189 +1,220 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import SendIcon from '@mui/icons-material/Send';
+import axios from 'axios';
 import { useChatData } from './ChatContext';
 
-const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
-  const [messages, setMessages] = useState(activeChat ? activeChat.messages : []);
-  const [alignment, setAlignment] = useState('right');
-  const [newMessageIndexes, setNewMessageIndexes] = useState([]);
-  const messageInputRef = useRef(null);
+axios.defaults.baseURL = 'https://vkedu-fullstack-div2.ru';
+
+const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
+  const { currentChatId, chats, setChats } = useChatData();
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const messagesEndRef = useRef(null);
 
-  const { updateChat } = useChatData(); // Подключаем updateChat из контекста
+  const getToken = () => localStorage.getItem('token');
 
-  // Загрузка сообщений из локального хранилища
-  useEffect(() => {
-    if (activeChat) {
-      const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
-      const currentChat = storedChats.chats.find((chat) => chat.chatId === activeChat.chatId);
-      if (currentChat) {
-        setMessages(currentChat.messages.map((msg) => ({ ...msg, read: true })));
-      } else {
-        setMessages([]);
-      }
+  const fetchCurrentUser = async () => {
+    const token = getToken();
+    if (!token) return;
+
+    try {
+      const response = await axios.get('/api/user/current/', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error('Ошибка получения информации о текущем пользователе:', error.message);
     }
-  }, [activeChat]);
+  };
 
-  // Скроллинг к последнему сообщению
-  useEffect(() => {
+  const fetchMessages = async () => {
+    setIsLoading(true);
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const response = await axios.get('/api/messages/', {
+        params: {
+          chat: currentChatId,
+          page: 1,
+          page_size: 50,
+        },
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 200 && response.data?.results) {
+        const fetchedMessages = response.data.results;
+
+        // Сортируем сообщения по времени создания (от старых к новым)
+        const sortedMessages = fetchedMessages.sort(
+          (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        );
+
+        setMessages(sortedMessages);
+
+        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
+        const updatedChats = storedChats.map((chat) => {
+          if (chat.id === currentChatId) {
+            return {
+              ...chat,
+              messages: sortedMessages,
+              last_message: sortedMessages[sortedMessages.length - 1],
+            };
+          }
+          return chat;
+        });
+
+        localStorage.setItem('chats', JSON.stringify(updatedChats));
+        setChats(updatedChats);
+      }
+    } catch (error) {
+      console.error('Ошибка загрузки сообщений:', error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const adjustTextareaHeight = (e) => {
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+  };
+
+  const scrollToBottom = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim() || !currentChatId) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    const newMessage = {
+      id: `${Date.now()}`,
+      text: inputMessage,
+      chat: currentChatId,
+      created_at: new Date().toISOString(),
+      sender: currentUser,
+    };
+
+    try {
+      const response = await axios.post('/api/messages/', newMessage, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 201) {
+        setMessages((prevMessages) => {
+          const updatedMessages = [...prevMessages, newMessage].sort(
+            (a, b) => new Date(a.created_at) - new Date(b.created_at),
+          );
+          return updatedMessages;
+        });
+
+        const storedChats = JSON.parse(localStorage.getItem('chats')) || [];
+        const updatedChats = storedChats.map((chat) => {
+          if (chat.id === currentChatId) {
+            return {
+              ...chat,
+              messages: [...(chat.messages || []), newMessage].sort(
+                (a, b) => new Date(a.created_at) - new Date(b.created_at),
+              ),
+              last_message: newMessage,
+            };
+          }
+          return chat;
+        });
+
+        localStorage.setItem('chats', JSON.stringify(updatedChats));
+        setChats(updatedChats);
+      }
+    } catch (error) {
+      console.error('Ошибка отправки сообщения:', error.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    if (currentChatId) {
+      fetchMessages();
+    }
+  }, [currentChatId]);
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages]);
 
-  // Сохранение обновлений чатов в localStorage
-  const saveChatsToLocalStorage = (updatedChat) => {
-    const storedChats = JSON.parse(localStorage.getItem('chats') || '{"chats": []}');
-    const chatIndex = storedChats.chats.findIndex((chat) => chat.chatId === updatedChat.chatId);
-    if (chatIndex !== -1) {
-      storedChats.chats[chatIndex] = updatedChat;
-    } else {
-      storedChats.chats.push(updatedChat);
-    }
-    localStorage.setItem('chats', JSON.stringify(storedChats));
-  };
+  const currentChat = chats.find((chat) => chat.id === currentChatId);
 
-  // Обработка отправки сообщения
-  const handleSendMessage = () => {
-    const message = messageInputRef.current?.value.trim();
-    if (message) {
-      const newMessage = {
-        type: 'outgoing',
-        from: alignment,
-        content: message,
-        time: new Date().toISOString(),
-        read: false,
-      };
-
-      const updatedMessages = [...messages, newMessage];
-      setMessages(updatedMessages);
-      setNewMessageIndexes((prev) => [...prev, updatedMessages.length - 1]);
-
-      const updatedChat = {
-        ...activeChat,
-        messages: updatedMessages,
-      };
-
-      saveChatsToLocalStorage(updatedChat);
-      updateChat(updatedChat); // Сохраняем изменения в глобальном контексте
-      messageInputRef.current.value = ''; // Очищаем поле ввода
-      adjustTextareaHeight();
-
-      // Удаляем индикатор нового сообщения через 1 секунду
-      setTimeout(() => {
-        setNewMessageIndexes((prev) =>
-          prev.filter((index) => index !== updatedMessages.length - 1),
-        );
-      }, 1000);
-    }
-  };
-
-  // Переключение направления сообщения
-  const toggleAlignment = () => {
-    setAlignment((prevAlignment) => (prevAlignment === 'right' ? 'left' : 'right'));
-    setMessages((prevMessages) =>
-      prevMessages.map((msg) => ({
-        ...msg,
-        type: msg.type === 'outgoing' ? 'incoming' : 'outgoing',
-      })),
-    );
-  };
-
-  // Корректировка высоты textarea
-  const adjustTextareaHeight = () => {
-    const textarea = messageInputRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
-    }
-  };
-
-  const handleBackClick = () => {
-    // Обновляем чат перед возвратом
-    const updatedChat = {
-      ...activeChat,
-      messages,
-    };
-    updateChat(updatedChat);
-    saveChatsToLocalStorage(updatedChat);
-    onBackClick();
-  };
-
-  if (!activeChat) {
-    return <div className="chatBox hide">Select a chat to start messaging</div>;
-  }
+  const getChatInitial = (name) => (name ? name.charAt(0).toUpperCase() : '');
 
   return (
     <div className="chatBox">
       <div className="chat_header">
-        <span id="back" className="back-arrow" onClick={handleBackClick}>
+        <span id="back" className="back-arrow" onClick={() => onBackClick()}>
           <ArrowBackIcon />
         </span>
-        <div className="imgcontent">
-          <div className="imgBx">
-            {avatar ? (
-              <img id="chatAvatar" src={avatar} alt="avatar" />
-            ) : (
-              <div className="initials">{letter}</div>
-            )}
-          </div>
-          <h3 id="chatName">
-            {activeChat.chatName}
-            <br />
-            <span className="status">online</span>
-          </h3>
-        </div>
-        <span id="toggleAlignment" className="material-symbols-outlined" onClick={toggleAlignment}>
-          <SyncAltIcon />
-        </span>
-      </div>
-      <div className="messageBox">
-        {messages.map((msg, index) => (
-          <div
-            key={index}
-            className={`message ${msg.type} ${
-              newMessageIndexes.includes(index) ? 'bubble-animation' : ''
-            }`}>
-            <div className="message-content">
-              <p>{msg.content}</p>
-              <span className={`time ${msg.type}`}>
-                {new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-              <span className="checkmarks">
-                {msg.read ? (
-                  <svg
-                    className="checkmark"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    data-testid="DoneAllIcon">
-                    <path d="m18 7-1.41-1.41-6.34 6.34 1.41 1.41zm4.24-1.41L11.66 16.17 7.48 12l-1.41 1.41L11.66 19l12-12zM.41 13.41 6 19l1.41-1.41L1.83 12z"></path>
-                  </svg>
-                ) : (
-                  <svg
-                    className="checkmark"
-                    focusable="false"
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    data-testid="DoneIcon">
-                    <path d="M9 16.17L4.83 12 3.41 13.41 9 19l12-12-1.41-1.41z" />
-                  </svg>
-                )}
-              </span>
+
+        {currentChat && (
+          <div className="imgcontent">
+            <div className="imgBx">
+              {currentChat.avatar ? (
+                <img src={currentChat.avatar} alt="Chat Avatar" className="avatar" />
+              ) : (
+                <div className="default-avatar">{getChatInitial(currentChat.title)}</div>
+              )}
             </div>
+            <h3>{currentChat.title}</h3>
           </div>
-        ))}
+        )}
+      </div>
+
+      {isLoading && <p>Loading messages...</p>}
+
+      <div className="messageBox">
+        {messages.map((msg) => {
+          const isOutgoing = currentUser && msg.sender?.id === currentUser.id;
+          return (
+            <div key={msg.id} className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
+              {msg.sender?.avatar && (
+                <img
+                  src={msg.sender.avatar}
+                  alt={`${msg.sender.username}'s avatar`}
+                  className="avatar"
+                />
+              )}
+              <div className="message-content">
+                <span className="username">{msg.sender?.username}</span>
+                <div className="message-text">{msg.text || '[No text]'}</div>
+                <span className="time">
+                  {new Date(msg.created_at).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
+              </div>
+            </div>
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
+
       <div className="messageInput">
         <textarea
           id="messageInput"
           placeholder="Введите сообщение..."
           rows="1"
-          ref={messageInputRef}
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
           onInput={adjustTextareaHeight}
           onKeyPress={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -201,23 +232,7 @@ const ChatWindow = ({ activeChat, onBackClick, avatar, letter }) => {
 };
 
 ChatWindow.propTypes = {
-  activeChat: PropTypes.shape({
-    chatId: PropTypes.number.isRequired,
-    chatName: PropTypes.string.isRequired,
-    participants: PropTypes.arrayOf(PropTypes.string).isRequired,
-    messages: PropTypes.arrayOf(
-      PropTypes.shape({
-        type: PropTypes.string.isRequired,
-        from: PropTypes.string.isRequired,
-        content: PropTypes.string.isRequired,
-        time: PropTypes.string.isRequired,
-        read: PropTypes.bool.isRequired,
-      }),
-    ).isRequired,
-  }),
-  onBackClick: PropTypes.func.isRequired,
-  avatar: PropTypes.string,
-  letter: PropTypes.string,
+  onBackClick: PropTypes.func,
 };
 
 export default ChatWindow;
