@@ -1,9 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import './Translator.css';
 import LanguageModal from './LanguageModal';
-import languages from './languages.json';
+import languagesJson from './languages.json';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHistory, addTranslation } from './translationSlice';
+
+interface LanguageMap {
+  [key: string]: string;
+}
+
+const languages: LanguageMap = languagesJson;
+
+interface Translation {
+  sourceText: string;
+  translatedText: string;
+  sourceLanguage: string;
+  targetLanguage: string;
+  timestamp: string;
+}
+
+interface RootState {
+  translation: {
+    history: Translation[];
+  };
+}
 
 const Translator: React.FC = () => {
   const [sourceLanguage, setSourceLanguage] = useState<string>('en-GB');
@@ -72,7 +92,7 @@ const Translator: React.FC = () => {
         const data = await response.json();
 
         if (data.responseData && data.responseData.translatedText) {
-          const newTranslation = {
+          const newTranslation: Translation = {
             sourceText: inputText,
             translatedText: data.responseData.translatedText,
             sourceLanguage,
