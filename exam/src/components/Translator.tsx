@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHistory, addTranslation } from './translationSlice';
 import { RootState } from './store';
 
-const languages: Record<string, string> = languagesJson; // Тип для переменной languages
+const languages: Record<string, string> = languagesJson;
 
 const Translator: React.FC = () => {
   const [sourceLanguage, setSourceLanguage] = useState<string>('en-GB');
@@ -15,7 +15,7 @@ const Translator: React.FC = () => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentLanguageType, setCurrentLanguageType] = useState<'source' | 'target'>('source');
-  const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null); // Исправление типа
+  const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
 
   const leftLanguages = ['en-GB', 'ru-RU', 'de-DE'];
   const rightLanguages = ['de-DE', 'ru-RU', 'en-GB'];
@@ -111,13 +111,17 @@ const Translator: React.FC = () => {
     <div className="translator">
       <div className="translator__column">
         <div className="translator__controls">
-          {leftLanguages.map((lang) => (
-            <button
-              key={lang}
-              className={`translator__language-button ${
-                lang === sourceLanguage ? 'translator__language-button--active' : ''
-              }`}
-              onClick={() => handleLanguageChange(lang, 'source')}>
+          <button
+            key={leftLanguages[0]}
+            className={`translator__language-button ${
+              leftLanguages[0] === sourceLanguage ? 'translator__language-button--active' : ''
+            }`}
+            onClick={() => handleLanguageChange(leftLanguages[0], 'source')}>
+            {languages[sourceLanguage]}
+          </button>
+
+          {leftLanguages.slice(1).map((lang) => (
+            <button key={lang} className="translator__language-button">
               {languages[lang]}
             </button>
           ))}
@@ -144,13 +148,17 @@ const Translator: React.FC = () => {
 
       <div className="translator__column">
         <div className="translator__controls">
-          {rightLanguages.map((lang) => (
-            <button
-              key={lang}
-              className={`translator__language-button ${
-                lang === targetLanguage ? 'translator__language-button--active' : ''
-              }`}
-              onClick={() => handleLanguageChange(lang, 'target')}>
+          <button
+            key={rightLanguages[0]}
+            className={`translator__language-button ${
+              rightLanguages[0] === targetLanguage ? 'translator__language-button--active' : ''
+            }`}
+            onClick={() => handleLanguageChange(rightLanguages[0], 'target')}>
+            {languages[targetLanguage]}
+          </button>
+
+          {rightLanguages.slice(1).map((lang) => (
+            <button key={lang} className="translator__language-button">
               {languages[lang]}
             </button>
           ))}
