@@ -4,26 +4,13 @@ import LanguageModal from './LanguageModal';
 import languagesJson from './languages.json';
 import { useDispatch, useSelector } from 'react-redux';
 import { setHistory, addTranslation } from './translationSlice';
+import { RootState } from './store';
 
 interface LanguageMap {
   [key: string]: string;
 }
 
 const languages: LanguageMap = languagesJson;
-
-interface Translation {
-  sourceText: string;
-  translatedText: string;
-  sourceLanguage: string;
-  targetLanguage: string;
-  timestamp: string;
-}
-
-interface RootState {
-  translation: {
-    history: Translation[];
-  };
-}
 
 const Translator: React.FC = () => {
   const [sourceLanguage, setSourceLanguage] = useState<string>('en-GB');
@@ -86,13 +73,11 @@ const Translator: React.FC = () => {
           `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
             inputText,
           )}&langpair=${sourceLanguage}|${targetLanguage}`,
-          { method: 'GET' },
         );
-
         const data = await response.json();
 
         if (data.responseData && data.responseData.translatedText) {
-          const newTranslation: Translation = {
+          const newTranslation = {
             sourceText: inputText,
             translatedText: data.responseData.translatedText,
             sourceLanguage,
@@ -100,10 +85,11 @@ const Translator: React.FC = () => {
             timestamp: new Date().toISOString(),
           };
           setTranslatedText(data.responseData.translatedText);
-
-          const updatedHistory = [newTranslation, ...translationHistory];
           dispatch(addTranslation(newTranslation));
-          localStorage.setItem('translationHistory', JSON.stringify(updatedHistory));
+          localStorage.setItem(
+            'translationHistory',
+            JSON.stringify([newTranslation, ...translationHistory]),
+          );
         } else {
           setTranslatedText('Ошибка перевода');
         }
@@ -155,7 +141,7 @@ const Translator: React.FC = () => {
       <div className="translator__swap-languages">
         <button className="translator__swap-button" onClick={swapLanguages}>
           <svg width="48" height="48" viewBox="0 0 24 24">
-            <path d="M19 9l-7 7-7-7" />
+            <path d="M19 9l-7 7-7-7"></path>
           </svg>
         </button>
       </div>

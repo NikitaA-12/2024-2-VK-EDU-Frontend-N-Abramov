@@ -10,8 +10,8 @@ interface LanguageModalProps {
 const LanguageModal: React.FC<LanguageModalProps> = ({ languages, onSelectLanguage, onClose }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const filteredLanguages = Object.entries(languages).filter(([key, value]) =>
-    value.toLowerCase().includes(searchQuery.toLowerCase()),
+  const filteredLanguages = Object.entries(languages).filter(([_, langName]) =>
+    langName.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   const handleLanguageClick = (langCode: string) => {
