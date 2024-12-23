@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import './Translator.css';
 import LanguageModal from './LanguageModal';
 import languagesJson from './languages.json';
@@ -6,11 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setHistory, addTranslation } from './translationSlice';
 import { RootState } from './store';
 
-interface LanguageMap {
-  [key: string]: string;
-}
-
-const languages: LanguageMap = languagesJson;
+const languages: Record<string, string> = languagesJson; // Тип для переменной languages
 
 const Translator: React.FC = () => {
   const [sourceLanguage, setSourceLanguage] = useState<string>('en-GB');
@@ -19,7 +15,7 @@ const Translator: React.FC = () => {
   const [translatedText, setTranslatedText] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [currentLanguageType, setCurrentLanguageType] = useState<'source' | 'target'>('source');
-  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [typingTimeout, setTypingTimeout] = useState<ReturnType<typeof setTimeout> | null>(null); // Исправление типа
 
   const leftLanguages = ['en-GB', 'ru-RU', 'de-DE'];
   const rightLanguages = ['de-DE', 'ru-RU', 'en-GB'];

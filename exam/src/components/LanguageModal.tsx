@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import './LanguageModal.css';
 
 interface LanguageModalProps {
@@ -10,9 +10,14 @@ interface LanguageModalProps {
 const LanguageModal: React.FC<LanguageModalProps> = ({ languages, onSelectLanguage, onClose }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const filteredLanguages = Object.entries(languages).filter(([_, langName]) =>
-    langName.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const getFilteredLanguages = () => {
+    const lowerCaseQuery = searchQuery.toLowerCase();
+    return Object.keys(languages).filter((langCode) =>
+      languages[langCode].toLowerCase().includes(lowerCaseQuery),
+    );
+  };
+
+  const filteredLanguageCodes = getFilteredLanguages();
 
   const handleLanguageClick = (langCode: string) => {
     console.log(`Language selected: ${langCode}`);
@@ -29,16 +34,18 @@ const LanguageModal: React.FC<LanguageModalProps> = ({ languages, onSelectLangua
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
+
         <ul className="language-modal__list">
-          {filteredLanguages.map(([langCode, langName]) => (
+          {filteredLanguageCodes.map((langCode) => (
             <li
               key={langCode}
               className="language-modal__item"
               onClick={() => handleLanguageClick(langCode)}>
-              {langName}
+              {languages[langCode]}
             </li>
           ))}
         </ul>
+
         <button className="language-modal__close" onClick={onClose}>
           Закрыть
         </button>
