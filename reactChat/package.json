@@ -1,12 +1,14 @@
 {
-  "name": "hw_13",
+  "name": "react-chat",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "homepage": "https://github.com/NikitaA-12/2024-2-VK-EDU-Frontend-N-Abramov",
   "scripts": {
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
