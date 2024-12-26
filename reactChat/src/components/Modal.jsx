@@ -6,9 +6,16 @@ const Modal = ({ isOpen, onClose }) => {
   const [chatName, setChatName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { createChat } = useChatData();
-
-  console.log('Modal isOpen:', isOpen);
+  const [searchQuery, setSearchQuery] = useState(''); // State for search query
+  const {
+    createChat,
+    availableUsers,
+    handleUserSelection,
+    selectedUsers,
+    setUserPage,
+    userPage,
+    isLoading,
+  } = useChatData();
 
   const validateChatName = (name) => {
     console.log('Validating chat name:', name);
@@ -36,7 +43,7 @@ const Modal = ({ isOpen, onClose }) => {
 
     try {
       console.log('Calling createChat method');
-      await createChat(trimmedName, isPrivate);
+      await createChat(trimmedName, isPrivate, selectedUsers);
       console.log('Chat created successfully');
 
       setChatName('');
@@ -62,6 +69,27 @@ const Modal = ({ isOpen, onClose }) => {
   const handleModalClick = (e) => {
     console.log('Modal content clicked');
     e.stopPropagation();
+  };
+
+  const handleSearchChange = (e) => {
+    console.log('Search input change:', e.target.value);
+    setSearchQuery(e.target.value.toLowerCase());
+  };
+
+  const handleCheckboxChange = (userId, isChecked) => {
+    console.log('User selection changed:', userId, isChecked);
+    handleUserSelection(userId, isChecked);
+  };
+
+  const filteredUsers = availableUsers.filter((user) =>
+    user.username.toLowerCase().includes(searchQuery),
+  );
+
+  const handleScroll = (e) => {
+    const bottom = e.target.scrollHeight === e.target.scrollTop + e.target.clientHeight;
+    if (bottom && availableUsers.length % 20 === 0) {
+      setUserPage(userPage + 1);
+    }
   };
 
   return (
@@ -103,13 +131,47 @@ const Modal = ({ isOpen, onClose }) => {
           </label>
         </div>
 
+        <h3>Выберите участников (не обязательно)</h3>
+
+        {/* Поле для поиска пользователей */}
+        <input
+          type="text"
+          placeholder="Поиск пользователей по имени"
+          value={searchQuery}
+          onChange={handleSearchChange}
+          style={{ marginBottom: '10px', padding: '8px', width: '100%' }}
+        />
+
+        <div
+          className="user-selection"
+          onScroll={handleScroll} // Обработчик события прокрутки
+          style={{ maxHeight: '200px', overflowY: 'auto' }}>
+          {isLoading ? (
+            <p>Загрузка пользователей...</p>
+          ) : (
+            filteredUsers.map((user) => (
+              <div key={user.id}>
+                <input
+                  type="checkbox"
+                  id={`user-${user.id}`}
+                  checked={selectedUsers.includes(user.id)}
+                  onChange={(e) => handleCheckboxChange(user.id, e.target.checked)}
+                />
+                <label htmlFor={`user-${user.id}`}>{user.username}</label>
+              </div>
+            ))
+          )}
+        </div>
+
         {errorMessage && <p className="error">{errorMessage}</p>}
 
         <button
           id="createChatButton"
           onClick={handleCreateChat}
-          disabled={!chatName.trim()}
-          style={{ cursor: !chatName.trim() ? 'not-allowed' : 'pointer' }}>
+          disabled={!chatName.trim()} // Отключаем кнопку только если название чата пустое
+          style={{
+            cursor: !chatName.trim() ? 'not-allowed' : 'pointer',
+          }}>
           Создать чат
         </button>
       </div>

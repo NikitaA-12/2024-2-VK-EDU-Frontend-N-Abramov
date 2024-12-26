@@ -1,3 +1,6 @@
+/* Подключаем шрифт Open Sans с Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700;800;900&display=swap');
+
 .modal {
   display: flex;
   position: fixed;
@@ -10,6 +13,7 @@
   background-color: rgba(0, 0, 0, 0.5);
   justify-content: center;
   align-items: center;
+  font-family: 'Open Sans', sans-serif; /* Устанавливаем шрифт Open Sans для всего модального окна */
 }
 
 .modal-content {
@@ -17,9 +21,10 @@
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
+  width: 340px; /* Установлена ширина модального окна */
   text-align: center;
+  font-family: 'Open Sans', sans-serif; /* Шрифт для содержимого модального окна */
+  color: #333; /* Основной цвет текста */
 }
 
 .close {
@@ -38,6 +43,7 @@
 
 .modal-content h2 {
   margin-bottom: 20px;
+  font-weight: 600; /* Увеличиваем вес шрифта для заголовка */
 }
 
 #chatNameInput {
@@ -47,6 +53,8 @@
   border: 1px solid #ccc;
   border-radius: 5px;
   font-size: 16px;
+  font-family: 'Open Sans', sans-serif;
+  color: #333;
 }
 
 #createChatButton {
@@ -58,6 +66,7 @@
   border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease, transform 0.3s ease; /* Плавное изменение фона и масштаба */
+  font-family: 'Open Sans', sans-serif;
 }
 
 #createChatButton:hover {
@@ -69,4 +78,61 @@
 /* Скрываем кнопку создания чата, если окно профиля открыто */
 .container.profileOpen .createChatButton {
   display: none;
+}
+
+.user-selection {
+  max-height: 200px; /* Ограничиваем высоту списка */
+  overflow-y: auto; /* Добавляем прокрутку, если список слишком длинный */
+  margin-bottom: 20px;
+  padding: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.user-selection div {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+}
+
+.user-selection input[type='checkbox'] {
+  margin-right: 10px;
+  transform: scale(1.2); /* Увеличиваем размер чекбокса для удобства */
+}
+
+.user-selection label {
+  font-size: 16px;
+  color: #333;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.user-selection label:hover {
+  color: #6b7df4; /* Цвет текста при наведении */
+}
+
+/* Стили для поиска пользователей */
+#searchUserInput {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  font-family: 'Open Sans', sans-serif;
+  color: #333;
+  box-sizing: border-box; /* Для корректного учета отступов */
+  transition: border-color 0.3s ease;
+}
+
+#searchUserInput:focus {
+  border-color: #6b7df4; /* Цвет рамки при фокусе */
+  outline: none;
+}
+
+#searchUserInput::placeholder {
+  color: #aaa; /* Цвет плейсхолдера */
 }

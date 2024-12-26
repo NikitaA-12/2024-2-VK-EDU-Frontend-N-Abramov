@@ -49,6 +49,12 @@ const LoginPage = () => {
       <button onClick={handleLogin} disabled={loading}>
         {loading ? 'Logging in...' : 'Login'}
       </button>
+      <p>
+        Don’t have an account?{' '}
+        <span onClick={() => navigate('/register')} style={{ color: 'blue', cursor: 'pointer' }}>
+          Register
+        </span>
+      </p>
     </div>
   );
 };

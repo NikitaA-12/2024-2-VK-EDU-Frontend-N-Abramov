@@ -13,7 +13,7 @@ import AddIcon from '@mui/icons-material/Add';
 import './index.scss';
 
 function App() {
-  const { chats, currentChatId, setCurrentChatId, createChat, deleteChat, sendMessage, setChats } =
+  const { chats, currentChatId, setCurrentChatId, createChat, deleteChat, sendMessage } =
     useChatData();
 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -22,17 +22,33 @@ function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Лог для отслеживания состояния аутентификации
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsAuthenticated(true);
+    }
+    console.log('User authenticated:', isAuthenticated); // Лог аутентификации
+  }, [isAuthenticated]);
+
+  // Лог для отслеживания списка чатов
+  useEffect(() => {
+    console.log('Chats:', chats); // Лог списка чатов
+  }, [chats]);
+
   const handleSearch = (term) => setSearchTerm(term);
 
   const handleChatSelect = (chat) => {
     setCurrentChatId(chat.id);
     navigate(`/chat/${chat.id}`);
+    console.log('Selected chat:', chat); // Лог выбранного чата
   };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   const handleCreateChat = async (chatTitle, isPrivate, membersArray = []) => {
+    console.log('Creating chat with title:', chatTitle); // Лог создания чата
     try {
       await createChat(chatTitle, isPrivate, membersArray);
       closeModal();
@@ -44,7 +60,7 @@ function App() {
   const handleDeleteChat = async (chatId) => {
     try {
       await deleteChat(chatId);
-      console.log(`Chat with ID ${chatId} deleted successfully`);
+      console.log(`Chat with ID ${chatId} deleted successfully`); // Лог удаления чата
       navigate('/');
     } catch (error) {
       console.error(`Failed to delete chat with ID ${chatId}:`, error.message);
@@ -54,6 +70,7 @@ function App() {
   const handleMessageSend = async (chatId, newMessage) => {
     try {
       await sendMessage(chatId, newMessage);
+      console.log('Message sent to chat:', chatId); // Лог отправки сообщения
     } catch (error) {
       console.error('Error sending message:', error.message);
     }
@@ -114,7 +131,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
@@ -128,6 +152,10 @@ function App() {
 function ChatRoute({ chats, currentChatId, onSendMessage, onBackClick, onDeleteChat }) {
   const { id } = useParams();
   const chat = chats.find((chat) => chat.id === id);
+
+  useEffect(() => {
+    console.log('Current chat:', chat); // Лог текущего чата
+  }, [chat]);
 
   if (!chat) return <div>Chat not found. Please try again.</div>;
 

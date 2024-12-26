@@ -78,8 +78,7 @@ const createChat = async (chatName) => {
 const deleteChat = async (chatId) => {
   try {
     console.log(`Attempting to delete chat with ID: ${chatId}`);
-
-    await $api.delete(`/chat/${chatId}/`);
+    await $api.delete(`/chats/${chatId}/`);
     console.log(`Chat with ID ${chatId} deleted successfully`);
   } catch (error) {
     if (error.response?.status === 404) {
@@ -101,6 +100,23 @@ const sendMessage = async (chatId, messageText) => {
     return response.data;
   } catch (error) {
     console.error('Error sending message:', error.response?.data || error.message);
+    throw error;
+  }
+};
+
+// Получение списка пользователей
+export const fetchUsers = async ({ search = '', page = 1, page_size = 10 }) => {
+  try {
+    const response = await $api.get('/users/', {
+      params: {
+        search,
+        page,
+        page_size,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users:', error.response?.data || error.message);
     throw error;
   }
 };

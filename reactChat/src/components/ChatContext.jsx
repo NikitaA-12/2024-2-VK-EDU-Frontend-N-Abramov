@@ -14,8 +14,12 @@ export const ChatProvider = ({ children }) => {
   const [currentChatId, setCurrentChatId] = useState(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [userPage, setUserPage] = useState(1);
+  const [userPageSize, setUserPageSize] = useState(20);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [availableUsers, setAvailableUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
 
   const getToken = () => {
     const token = localStorage.getItem('token');
@@ -46,18 +50,6 @@ export const ChatProvider = ({ children }) => {
             : chat,
         ),
       );
-
-      const updatedChats = chats.map((chat) =>
-        chat.id === chatId
-          ? {
-              ...chat,
-              last_message:
-                fetchedMessages.length > 0 ? fetchedMessages[fetchedMessages.length - 1] : null,
-            }
-          : chat,
-      );
-
-      localStorage.setItem('chats', JSON.stringify(updatedChats));
     } catch (err) {
       console.error('Failed to fetch messages', err.message);
     }
@@ -117,6 +109,44 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      setIsLoading(true);
+      let allUsers = [];
+      let currentPage = 1; // Локальная переменная для текущей страницы
+      let hasNextPage = true;
+
+      while (hasNextPage) {
+        const response = await $api.get('/users/', {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page: currentPage, page_size: userPageSize },
+        });
+
+        const users = response.data?.results || [];
+        allUsers = [...allUsers, ...users];
+
+        if (response.data?.next) {
+          currentPage += 1; // Увеличиваем локальный номер страницы
+        } else {
+          hasNextPage = false; // Заканчиваем загрузку, если нет ссылки `next`
+        }
+
+        console.log(`Загружено пользователей с сервера (страница ${currentPage - 1}):`, users);
+      }
+
+      setAvailableUsers(allUsers);
+      console.log('Общее количество загруженных пользователей:', allUsers.length);
+    } catch (err) {
+      console.error('Не удалось загрузить пользователей:', err.message);
+      setError('Ошибка при загрузке пользователей');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const storedChats = localStorage.getItem('chats');
     if (storedChats) {
@@ -133,7 +163,17 @@ export const ChatProvider = ({ children }) => {
     } else {
       fetchChats();
     }
-  }, []);
+  }, [page, pageSize, searchTerm]);
+
+  useEffect(() => {
+    if (chats.length > 0) {
+      fetchUsers();
+    }
+  }, [chats]);
+
+  useEffect(() => {
+    console.log('Updated availableUsers:', availableUsers);
+  }, [availableUsers]);
 
   const onChatSelect = async (chatId) => {
     setSelectedChatId(chatId);
@@ -201,6 +241,16 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  const handleUserSelection = (userId, isSelected) => {
+    setSelectedUsers((prev) => {
+      if (isSelected) {
+        return [...prev, userId];
+      } else {
+        return prev.filter((id) => id !== userId);
+      }
+    });
+  };
+
   return (
     <ChatContext.Provider
       value={{
@@ -214,6 +264,9 @@ export const ChatProvider = ({ children }) => {
         createChat,
         onChatSelect,
         fetchChats,
+        availableUsers,
+        selectedUsers,
+        handleUserSelection,
         isLoading,
         error,
       }}>
@@ -225,3 +278,5 @@ export const ChatProvider = ({ children }) => {
 ChatProvider.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
+export default ChatProvider;

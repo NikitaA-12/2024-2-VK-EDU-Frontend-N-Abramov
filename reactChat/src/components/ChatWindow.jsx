@@ -5,8 +5,6 @@ import SendIcon from '@mui/icons-material/Send';
 import axios from 'axios';
 import { useChatData } from './ChatContext';
 
-axios.defaults.baseURL = 'https://vkedu-fullstack-div2.ru';
-
 const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
   const { currentChatId, chats, setChats } = useChatData();
   const [messages, setMessages] = useState([]);
@@ -110,6 +108,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
       });
 
       if (response.status === 201) {
+        // Обновляем сообщения в интерфейсе
         setMessages((prevMessages) => {
           const updatedMessages = [...prevMessages, newMessage].sort(
             (a, b) => new Date(a.created_at) - new Date(b.created_at),

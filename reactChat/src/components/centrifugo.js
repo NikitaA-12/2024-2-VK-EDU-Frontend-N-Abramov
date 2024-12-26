@@ -1,4 +1,5 @@
-import Centrifuge from 'centrifuge';
+// Импортируем Centrifuge как именованный экспорт
+import { Centrifuge } from 'centrifuge';
 import { $api } from './api'; // Импортируем настроенный $api для работы с API
 
 export const initAndStartCentrifugo = (chatId, onMessageReceived) => {

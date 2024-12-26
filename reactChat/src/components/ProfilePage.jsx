@@ -111,6 +111,12 @@ const ProfilePage = () => {
     document.getElementById('avatar-upload').click();
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('profile');
+    navigate('/login');
+  };
+
   return (
     <div className="profile-page">
       <header className="profile-header">
@@ -174,6 +180,10 @@ const ProfilePage = () => {
           />
         </div>
       </div>
+
+      <button onClick={handleLogout} className="logout-btn">
+        Logout
+      </button>
     </div>
   );
 };
