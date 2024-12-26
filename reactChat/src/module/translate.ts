@@ -43,7 +43,7 @@ export const translate = memoize(
       if (error instanceof Error) {
         throw new Error(`Translation error: ${error.message}`);
       }
-      throw new Error('Translation error: An unknown error occurred');
+      throw new Error('Translation error : An unknown error occurred');
     }
   },
 );
