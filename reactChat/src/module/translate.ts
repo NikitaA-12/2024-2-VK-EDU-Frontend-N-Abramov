@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { memoize } from './helpers.js';
 
+const deepClone = (obj: any): any => {
+  return JSON.parse(JSON.stringify(obj));
+};
+
 export const translate = memoize(
   async (
     text: string,
