@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface LanguageButtonProps {
   language: string;
   isActive: boolean;
@@ -7,7 +5,7 @@ interface LanguageButtonProps {
   label: string;
 }
 
-const LanguageButton: React.FC<LanguageButtonProps> = ({ language, isActive, onClick, label }) => {
+const LanguageButton: React.FC<LanguageButtonProps> = ({ isActive, onClick, label }) => {
   return (
     <button className={`translator__language-button ${isActive ? 'active' : ''}`} onClick={onClick}>
       {label}

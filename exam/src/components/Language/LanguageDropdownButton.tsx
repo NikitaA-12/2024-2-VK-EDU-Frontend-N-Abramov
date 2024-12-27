@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface LanguageDropdownButtonProps {
   isActive: boolean;
   onClick: () => void;

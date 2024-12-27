@@ -1,11 +1,12 @@
 .history-page {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   min-height: 100vh;
   text-align: center;
   padding: 20px;
+  padding-top: 30px;
 }
 
 .history-page h1 {

@@ -1,7 +1,6 @@
-import React from 'react';
 import LanguageButton from './LanguageButton';
 import LanguageDropdownButton from './LanguageDropdownButton';
-import languages from '../Language/languages.json';
+import languagesData from '../Language/languages.json';
 
 interface LanguageControlProps {
   languagesList: string[];
@@ -10,6 +9,8 @@ interface LanguageControlProps {
   onOpenModal: () => void;
   isModalOpen: boolean;
 }
+
+const languages: Record<string, string> = languagesData;
 
 const LanguageControl: React.FC<LanguageControlProps> = ({
   languagesList,
@@ -26,7 +27,7 @@ const LanguageControl: React.FC<LanguageControlProps> = ({
           language={lang}
           isActive={lang === activeLanguage}
           onClick={() => onLanguageChange(lang)}
-          label={languages[lang]}
+          label={languages[lang] || 'Unknown Language'}
         />
       ))}
       <LanguageDropdownButton isActive={isModalOpen} onClick={onOpenModal} />

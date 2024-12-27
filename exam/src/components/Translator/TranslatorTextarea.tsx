@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface TranslatorTextareaProps {
   value: string;
   placeholder: string;

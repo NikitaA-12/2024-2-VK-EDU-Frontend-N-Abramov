@@ -1,4 +1,3 @@
-import React from 'react';
 import LanguageControl from './LanguageControl';
 
 interface LanguageSwitcherProps {

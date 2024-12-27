@@ -1,5 +1,4 @@
-import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import Translator from './components/Translator/Translator';
 import HistoryPage from './components/HistoryPage';
 import './style/main.scss';
