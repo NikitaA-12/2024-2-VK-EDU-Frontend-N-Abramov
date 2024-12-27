@@ -1,0 +1,149 @@
+* {
+  font-family: 'Roboto', Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+.translator {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+.translator__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+}
+
+.translator__column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.translator__controls {
+  display: flex;
+  gap: 10px;
+}
+
+.translator__language-button {
+  color: #5d5d5d;
+  background-color: transparent;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.language-line {
+  width: 100%;
+  height: 2px;
+  background-color: #007bff;
+  margin-top: 5px;
+}
+
+.translator__language-button.active {
+  font-weight: bold;
+  color: #007bff;
+  border-bottom: 2px solid #007bff;
+}
+
+.translator__icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+}
+
+.translator__icon .material-symbols-outlined {
+  font-size: 124px;
+}
+
+.translator__swap-languages {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.translator__swap-button {
+  color: #393939;
+  border: none;
+  background-color: transparent;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 36px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s;
+}
+
+.translator__swap-button .material-icons {
+  font-size: 30px;
+}
+
+.translator__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.translator__textarea {
+  flex: 1;
+  resize: none;
+  font-family: 'Roboto', Arial, sans-serif;
+  border: 1px solid #ccc;
+  padding: 10px;
+  font-size: 18px;
+  height: 120px;
+  border-radius: 10px;
+}
+
+.translator__output {
+  font-family: 'Roboto', Arial, sans-serif;
+  flex: 1;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 18px;
+  background: #f9f9f9;
+  height: 120px;
+}
+
+.translator__footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.translator__history-circle {
+  background: #ffffff;
+  border-radius: 50%;
+  padding: 10px;
+  color: rgb(74, 74, 74);
+  font-size: 50px;
+  border: 1px solid #393939;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.translator__history-circle .material-icons {
+  font-size: 30px;
+}
+
+.translator__footer a {
+  text-decoration: none;
+}
