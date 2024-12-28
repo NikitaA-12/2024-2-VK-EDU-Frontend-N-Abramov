@@ -22,9 +22,13 @@ const translationSlice = createSlice({
   reducers: {
     setHistory(state, action: PayloadAction<TranslationHistoryItem[]>) {
       state.history = action.payload;
+
+      localStorage.setItem('translationHistory', JSON.stringify(state.history));
     },
     addTranslation(state, action: PayloadAction<TranslationHistoryItem>) {
       state.history = [action.payload, ...state.history];
+
+      localStorage.setItem('translationHistory', JSON.stringify(state.history));
     },
   },
 });

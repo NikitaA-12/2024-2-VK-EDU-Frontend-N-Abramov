@@ -100,7 +100,10 @@ const Translator: React.FC = () => {
         timestamp: new Date().toISOString(),
       };
       dispatch(addTranslation(newTranslation));
-      localStorage.setItem('translationHistory', JSON.stringify([newTranslation]));
+
+      const history = JSON.parse(localStorage.getItem('translationHistory') || '[]');
+      history.unshift(newTranslation);
+      localStorage.setItem('translationHistory', JSON.stringify(history));
     }
   }, [translatedText]);
 

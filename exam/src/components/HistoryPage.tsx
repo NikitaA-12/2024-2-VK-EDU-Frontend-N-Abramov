@@ -1,6 +1,5 @@
-import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
 import { useNavigate } from 'react-router-dom';
+import useTranslationHistory from '../hooks/useTranslationHistory';
 
 // Маппинг для перевода кодов языков в их полные названия
 const languageNames: { [key: string]: string } = {
@@ -10,7 +9,7 @@ const languageNames: { [key: string]: string } = {
 };
 
 const HistoryPage: React.FC = () => {
-  const translationHistory = useSelector((state: RootState) => state.translation.history);
+  const translationHistory = useTranslationHistory();
   const navigate = useNavigate();
 
   const handleBackClick = () => {
