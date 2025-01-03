@@ -1,79 +1,92 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useChatData } from './ChatContext';
+import { useDispatch, useSelector } from 'react-redux';
 import ChatItem from './ChatItem';
 import Modal from './Modal';
+import { fetchChats, removeChatFromState } from '../store/chatsSlice';
+import $api from '../api/api';
 
 const ChatList = ({ onChatSelect, searchTerm }) => {
-  const { chats, setChats } = useChatData();
+  const { chats, currentChatId, isLoading, error } = useSelector((state) => state.chats);
+  const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newChatId, setNewChatId] = useState(null);
-  const [chatName, setChatName] = useState(''); // Состояние для имени нового чата
+  const [chatName, setChatName] = useState('');
+  const [deletingChatId, setDeletingChatId] = useState(null);
 
   useEffect(() => {
-    // Автоматическая сортировка чатов при обновлении
-    const sortedChats = [...chats].sort((a, b) => {
-      const lastMessageA = a.messages[a.messages.length - 1]?.time || 0;
-      const lastMessageB = b.messages[b.messages.length - 1]?.time || 0;
-      return new Date(lastMessageB) - new Date(lastMessageA);
-    });
+    dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
+  }, [dispatch]);
 
-    // Обновляем только если порядок изменился
-    if (JSON.stringify(sortedChats) !== JSON.stringify(chats)) {
-      setChats(sortedChats);
+  const saveChatsToLocalStorage = (updatedChats) => {
+    try {
+      localStorage.setItem('chats', JSON.stringify(updatedChats));
+      console.log('Chats saved to localStorage');
+    } catch (error) {
+      console.error('Failed to save chats to localStorage:', error.message);
     }
-  }, [chats, setChats]);
+  };
 
-  useEffect(() => {
-    if (newChatId !== null) {
-      const timer = setTimeout(() => {
-        setNewChatId(null);
-      }, 300);
-      return () => clearTimeout(timer);
+  const deleteChat = async (chatId) => {
+    setDeletingChatId(chatId);
+    try {
+      console.log(`Deleting chat with ID: ${chatId}`);
+      await $api.delete(`/chat/${chatId}/`);
+
+      dispatch(removeChatFromState(chatId));
+
+      const updatedChats = chats.filter((chat) => chat.id !== chatId);
+      saveChatsToLocalStorage(updatedChats);
+
+      console.log('Chat deleted successfully');
+    } catch (error) {
+      console.error('Error deleting chat:', error.message);
+    } finally {
+      setDeletingChatId(null);
     }
-  }, [newChatId]);
-
-  // Фильтрация чатов на основе searchTerm
-  const filteredChats = chats.filter((chat) =>
-    chat.chatName.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
-
-  // Удаление чата
-  const deleteChat = (chatId) => {
-    const updatedChats = chats.filter((chat) => chat.chatId !== chatId);
-    setChats(updatedChats); // Обновляем чаты в контексте
   };
 
-  // Создание нового чата
-  const handleCreateChat = () => {
-    if (!chatName.trim()) return; // Проверка на пустое имя чата
+  const handleCreateChat = async (title, isPrivate) => {
+    try {
+      console.log(`Creating chat with title: "${title}"`);
+      const response = await $api.post('/chats/', {
+        title,
+        is_private: isPrivate,
+      });
 
-    const newChat = {
-      chatId: chats.length > 0 ? Math.max(...chats.map((chat) => chat.chatId)) + 1 : 1,
-      chatName: chatName,
-      participants: [chatName, 'You'],
-      messages: [],
-    };
+      const newChat = {
+        ...response.data,
+        created_at: new Date(response.data.created_at),
+        updated_at: new Date(response.data.updated_at),
+      };
 
-    const updatedChats = [newChat, ...chats];
-    setChats(updatedChats); // Добавляем новый чат через контекст
-    setNewChatId(newChat.chatId);
-    setIsModalOpen(false);
-    setChatName(''); // Очищаем имя чата после создания
+      console.log('New chat received from API:', newChat);
+
+      const updatedChats = [newChat, ...chats];
+      dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
+      saveChatsToLocalStorage(updatedChats);
+
+      console.log('New chat created and state updated');
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to create chat:', error.message);
+    }
   };
 
-  // Отправка сообщения
-  const onSendMessage = (chatId, message) => {
-    const updatedChats = chats.map((chat) => {
-      if (chat.chatId === chatId) {
-        const updatedMessages = [...chat.messages, message];
-        return { ...chat, messages: updatedMessages };
-      }
-      return chat;
-    });
+  const filteredChats = Array.isArray(chats)
+    ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    : [];
 
-    setChats(updatedChats); // Обновляем чаты через контекст
-  };
+  if (isLoading) {
+    return (
+      <div className="loadingChatsWrapper">
+        <span>Загрузка чатов</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div>Error loading chats: {error}</div>;
+  }
 
   return (
     <div className="chatlist">
@@ -81,24 +94,26 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
         {filteredChats.length > 0 ? (
           filteredChats.map((chat) => (
             <ChatItem
-              key={chat.chatId}
+              key={chat.id}
               chat={chat}
-              onChatClick={onChatSelect}
-              onDelete={deleteChat}
-              onSendMessage={onSendMessage}
-              isNew={chat.chatId === newChatId} // Указываем новый чат
+              isActive={chat.id === currentChatId}
+              onClick={() => onChatSelect(chat)}
+              onDelete={() => deleteChat(chat.id)}
+              lastMessageContent={chat.last_message?.content || 'Нет сообщений'}
+              isDeleting={deletingChatId === chat.id}
             />
           ))
         ) : (
-          <div>No chats available</div> // Сообщение, если чаты не найдены
+          <div>No chats available</div>
         )}
       </div>
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onCreate={handleCreateChat}
+        onCreate={(title, isPrivate) => handleCreateChat(title, isPrivate)}
         chatName={chatName}
-        setChatName={setChatName} // Передаем состояние и метод для обновления имени чата
+        setChatName={setChatName}
       />
     </div>
   );

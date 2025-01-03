@@ -12,14 +12,14 @@
   padding: 5px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  transition: width 0.3s ease, opacity 0.3s ease; /* Плавное изменение ширины и прозрачности */
-  display: block; /* Элемент будет видим, но с нулевой шириной и прозрачностью */
+  transition: width 0.3s ease, opacity 0.3s ease;
+  display: block;
 }
 
 #searchInput.active {
   width: 160px;
-  opacity: 1; /* Элемент становится полностью видимым */
-  margin-left: 10px; /* Отступ слева */
+  opacity: 1;
+  margin-left: 10px;
 }
 
 #searchIcon.hide {

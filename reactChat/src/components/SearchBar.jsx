@@ -4,37 +4,32 @@ import SearchIcon from '@mui/icons-material/Search';
 
 const SearchBar = ({ searchTerm, setSearchTerm }) => {
   const [isActive, setIsActive] = useState(false);
-  const searchRef = useRef(null); // Ссылка на контейнер поиска
+  const searchRef = useRef(null);
 
-  // Включение состояния активного поиска
   const toggleSearch = () => {
     setIsActive(true);
   };
 
-  // Обработка изменения текста в поле ввода
   const handleInputChange = (event) => {
     setSearchTerm(event.target.value);
   };
 
-  // Обработка потери фокуса
   const handleBlur = () => {
     if (searchTerm === '') {
       setIsActive(false);
     }
   };
 
-  // Обработчик клика вне области поиска
   const handleClickOutside = (event) => {
     if (searchRef.current && !searchRef.current.contains(event.target)) {
-      setIsActive(false); // Скрываем поле ввода, если клик был вне компонента поиска
+      setIsActive(false);
     }
   };
 
-  // Используем useEffect для добавления слушателя на клик по документу
   useEffect(() => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside); // Убираем слушатель при размонтировании компонента
+      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
 
@@ -43,26 +38,26 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
       <SearchIcon
         id="searchIcon"
         className={isActive ? 'hide' : ''}
-        onClick={toggleSearch} // Включение активного поиска по клику на иконку
+        onClick={toggleSearch}
         fontSize="small"
       />
       <input
         type="text"
         id="searchInput"
-        className={isActive ? 'active' : ''} // Стили для активного поиска
+        className={isActive ? 'active' : ''}
         placeholder="Поиск чатов..."
         value={searchTerm}
-        onChange={handleInputChange} // Обновление состояния при вводе
-        onFocus={() => setIsActive(true)} // Включение поиска при фокусе на input
-        onBlur={handleBlur} // Выход из активного состояния при потере фокуса
+        onChange={handleInputChange}
+        onFocus={() => setIsActive(true)}
+        onBlur={handleBlur}
       />
     </div>
   );
 };
 
 SearchBar.propTypes = {
-  searchTerm: PropTypes.string.isRequired, // Текущий текст поиска
-  setSearchTerm: PropTypes.func.isRequired, // Функция для обновления текста поиска
+  searchTerm: PropTypes.string.isRequired,
+  setSearchTerm: PropTypes.func.isRequired,
 };
 
 export default SearchBar;

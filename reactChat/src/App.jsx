@@ -1,124 +1,158 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
-import AddIcon from '@mui/icons-material/Add';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
-import Modal from './components/Modal.jsx';
-import { useChatData } from './components/ChatContext';
+import LoginPage from './components/LoginPage.jsx';
+import RegisterPage from './components/RegisterPage.jsx';
 import ProfilePage from './components/ProfilePage.jsx';
-import avatar1 from './assets/1.png';
-import avatar2 from './assets/2.png';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Modal from './components/Modal.jsx';
+import AddIcon from '@mui/icons-material/Add';
+import { fetchChats, setSearchTerm, setCurrentChatId } from './store/chatsSlice.js';
+import { fetchUsers } from './store/userSlice';
+import { sendMessage } from './store/messagesSlice';
 import './index.scss';
 
-const avatars = {
-  1: avatar1,
-  2: avatar2,
-  default: null,
-};
-
-const getAvatar = (chatId) => avatars[chatId] || avatars.default;
-
 function App() {
-  const { chats, addChat, updateChat } = useChatData();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { chats = [], currentChatId, searchTerm, isLoading } = useSelector((state) => state.chats);
+  const { availableUsers = [], isLoading: usersLoading } = useSelector((state) => state.users);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Открытие и закрытие модального окна
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (!chats.length) {
+        dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
+      }
+
+      if (!availableUsers.length) {
+        dispatch(fetchUsers({ userPageSize: 10 }));
+      }
+    }
+  }, [dispatch, chats.length, availableUsers.length, isAuthenticated]);
+
+  const handleSearch = (term) => {
+    dispatch(setSearchTerm(term));
+  };
+
+  const handleChatSelect = (chat) => {
+    dispatch(setCurrentChatId(chat.id));
+    navigate(`/chat/${chat.id}`);
+  };
+
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
-  // Создание нового чата
-  const createChat = (chatName) => {
-    if (!chatName.trim()) return; // Проверка на пустое имя
-    addChat(chatName);
-    closeModal();
-  };
-
-  // Поиск чатов
-  const handleSearch = (term) => setSearchTerm(term);
-
-  // Выбор чата
-  const handleChatSelect = (chat) => navigate(`/chat/${chat.chatId}`);
-
-  // Отправка сообщения
-  const handleMessageSend = (chatId, newMessage) => {
-    const updatedChat = chats.find((chat) => chat.chatId === chatId);
-    if (updatedChat) {
-      const newMessages = [...updatedChat.messages, newMessage];
-      updateChat({ ...updatedChat, messages: newMessages });
+  const handleCreateChat = async (chatTitle, isPrivate, membersArray = []) => {
+    try {
+      console.log('Создание чата:', { chatTitle, isPrivate, membersArray });
+      closeModal();
+    } catch (error) {
+      console.error('Не удалось создать чат:', error.message);
     }
   };
 
-  // Обработчик клика на профиль
-  const handleProfileClick = () => {
-    navigate('/profile');
+  const handleDeleteChat = async (chatId) => {
+    try {
+      console.log('Удаление чата:', chatId);
+      navigate('/');
+    } catch (error) {
+      console.error('Не удалось удалить чат:', error.message);
+    }
   };
+
+  const handleMessageSend = async (chatId, newMessage) => {
+    try {
+      dispatch(sendMessage({ chatId, newMessage }));
+    } catch (error) {
+      console.error('Ошибка отправки сообщения:', error.message);
+    }
+  };
+
+  const handleBackClick = () => navigate('/');
+
+  const isOnChatListPage = location.pathname === '/';
 
   return (
     <div className="container">
-      <Header
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        onSearch={handleSearch}
-        onProfileClick={handleProfileClick}
-      />
-      <div className="tabs">
+      {isOnChatListPage && (
         <div className="quickBtn">
           <button className="createChatButton" onClick={openModal}>
             <AddIcon />
           </button>
         </div>
-        <ChatList chats={chats} onChatSelect={handleChatSelect} searchTerm={searchTerm} />
-      </div>
-      {isModalOpen && <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={createChat} />}
+      )}
+
       <Routes>
-        <Route path="/" element={null} />
+        <Route path="/login" element={<LoginPage onLogin={() => setIsAuthenticated(true)} />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Header
+                searchTerm={searchTerm}
+                setSearchTerm={handleSearch}
+                onProfileClick={() => navigate('/profile')}
+              />
+              <ChatList
+                chats={
+                  searchTerm
+                    ? chats.filter((chat) =>
+                        chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
+                      )
+                    : chats
+                }
+                onChatSelect={handleChatSelect}
+                searchTerm={searchTerm}
+                isLoading={isLoading || usersLoading}
+                onDeleteChat={handleDeleteChat}
+              />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/chat/:id"
-          element={<ChatDetails chats={chats} onSendMessage={handleMessageSend} />}
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <ChatRoute
+                chats={chats}
+                currentChatId={currentChatId}
+                onSendMessage={handleMessageSend}
+                onBackClick={handleBackClick}
+                onDeleteChat={handleDeleteChat}
+              />
+            </ProtectedRoute>
+          }
         />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile" element={<ProfilePage availableUsers={availableUsers} />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreateChat} />
+      )}
     </div>
   );
 }
 
-function ChatDetails({ chats, onSendMessage }) {
+function ChatRoute({ chats, currentChatId, onSendMessage, onBackClick, onDeleteChat }) {
   const { id } = useParams();
-  const chatId = parseInt(id, 10);
-  const navigate = useNavigate();
-  const { updateChat } = useChatData(); // Добавлено обновление контекста
+  const chat = chats.find((chat) => chat.id === currentChatId || chat.id === id);
 
-  // Получение текущего чата
-  const activeChat = chats.find((chat) => chat.chatId === chatId);
-
-  useEffect(() => {
-    if (!activeChat) {
-      navigate('/'); // Возврат на главную, если чат не найден
-    }
-  }, [activeChat, navigate]);
-
-  const handleBackClick = () => {
-    // Обновляем чат перед возвратом
-    if (activeChat) {
-      updateChat(activeChat);
-    }
-    navigate('/');
-  };
-
-  if (!activeChat) {
-    return null;
-  }
+  if (!chat) return <div>Чат не найден. Пожалуйста, попробуйте снова.</div>;
 
   return (
     <ChatWindow
-      activeChat={activeChat}
-      avatar={getAvatar(chatId)}
-      letter={activeChat.chatName.charAt(0).toUpperCase() || ''}
-      onBackClick={handleBackClick}
-      onSendMessage={(message) => onSendMessage(chatId, message)}
+      chatId={chat.id}
+      onSendMessage={onSendMessage}
+      onBackClick={onBackClick}
+      onDeleteChat={() => onDeleteChat(chat.id)}
     />
   );
 }

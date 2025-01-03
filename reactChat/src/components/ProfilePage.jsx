@@ -2,60 +2,117 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { $api } from '../api/api';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
-  const [avatar, setAvatar] = useState('');
+  const [avatar, setAvatar] = useState(null);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
+  const [error, setError] = useState('');
 
-  // Загрузка данных профиля из localStorage при загрузке страницы
   useEffect(() => {
-    const savedProfile = JSON.parse(localStorage.getItem('profile')) || {};
-    setAvatar(savedProfile.avatar || '');
-    setFullName(savedProfile.fullName || '');
-    setUsername(savedProfile.username || '');
-    setBio(savedProfile.bio || '');
-  }, []);
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Token is missing');
+        return;
+      }
 
-  // Сохранение данных профиля
-  const handleSave = () => {
-    const profileData = {
-      avatar,
-      fullName,
-      username,
-      bio,
+      try {
+        const response = await $api.get('https://vkedu-fullstack-div2.ru/api/user/current/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const { avatar, username, first_name, last_name, bio } = response.data;
+
+        setAvatar(avatar || null);
+        setUsername(username || '');
+        setFullName(`${first_name || ''} ${last_name || ''}`.trim());
+        setBio(bio || '');
+
+        localStorage.setItem('profile', JSON.stringify(response.data));
+      } catch (error) {
+        console.error('Error fetching profile:', error.response?.data || error.message);
+        setError('Failed to load profile. Please try again later.');
+      }
     };
 
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (username.length > 150) {
+      setError('Username cannot be longer than 150 characters');
+      return;
+    }
+
+    const [firstName, lastName] = fullName.split(' ');
+
+    if (!lastName) {
+      setError('Last name is required');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('bio', bio);
+
+    if (avatar && avatar instanceof File) {
+      formData.append('avatar', avatar);
+    }
+
     try {
-      localStorage.setItem('profile', JSON.stringify(profileData));
-      navigate('/'); // Переход на главную страницу (список чатов)
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Token is missing');
+        return;
+      }
+
+      const response = await $api.patch(
+        'https://vkedu-fullstack-div2.ru/api/user/current/',
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      console.log('Profile updated:', response.data);
+      localStorage.setItem('profile', JSON.stringify(response.data));
+      navigate('/');
     } catch (error) {
-      console.error('Ошибка сохранения профиля:', error);
+      console.error('Error saving profile:', error.response?.data || error.message);
+      setError('Failed to save profile. Please try again later.');
     }
   };
 
-  // Возврат на главную страницу без сохранения
   const handleBackClick = () => {
     navigate('/');
   };
 
-  // Обработчик выбора файла для аватарки
   const handleAvatarChange = (event) => {
     const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setAvatar(reader.result); // Устанавливаем аватарку как Base64 строку
-      };
-      reader.readAsDataURL(file);
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+      setAvatar(file);
+    } else {
+      setError('Please upload a JPEG or PNG image');
     }
   };
 
-  // Имитируем клик по скрытому input при нажатии на контейнер
   const handleAvatarContainerClick = () => {
     document.getElementById('avatar-upload').click();
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('profile');
+    navigate('/login');
   };
 
   return (
@@ -70,17 +127,23 @@ const ProfilePage = () => {
         </button>
       </header>
 
+      {error && <div className="error-message">{error}</div>}
+
       <div className="profile-content">
         <div className="avatar-container" onClick={handleAvatarContainerClick}>
           {avatar ? (
-            <img src={avatar} alt="User Avatar" className="avatar" />
+            avatar instanceof File ? (
+              <img src={URL.createObjectURL(avatar)} alt="User Avatar" className="avatar" />
+            ) : (
+              <img src={avatar} alt="User Avatar" className="avatar" />
+            )
           ) : (
             <div className="avatar-placeholder">+</div>
           )}
           <input
             id="avatar-upload"
             type="file"
-            accept="image/*"
+            accept="image/jpeg, image/png"
             onChange={handleAvatarChange}
             style={{ display: 'none' }}
           />
@@ -115,6 +178,10 @@ const ProfilePage = () => {
           />
         </div>
       </div>
+
+      <button onClick={handleLogout} className="logout-btn">
+        Logout
+      </button>
     </div>
   );
 };
