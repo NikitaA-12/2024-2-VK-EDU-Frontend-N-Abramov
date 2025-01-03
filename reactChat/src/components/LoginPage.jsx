@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { $api } from './api';
-import { useChatData } from './ChatContext';
+import { useDispatch } from 'react-redux';
+import { fetchChats } from '../store/chatsSlice';
+import { $api } from '../api/api';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -9,18 +10,21 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const { fetchChats } = useChatData();
+  const dispatch = useDispatch();
 
   const handleLogin = async () => {
     setLoading(true);
     setError('');
     try {
       const response = await $api.post('/auth/', { username: email, password });
+
       localStorage.setItem('token', response.data.access);
       localStorage.setItem('refresh', response.data.refresh);
       localStorage.setItem('isAuthenticated', 'true');
 
-      await fetchChats();
+      dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+
+      await dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
 
       navigate('/');
     } catch (error) {

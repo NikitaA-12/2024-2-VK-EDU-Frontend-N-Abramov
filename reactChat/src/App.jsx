@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useChatData } from './components/ChatContext';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
 import ChatWindow from './components/ChatWindow.jsx';
@@ -10,69 +10,67 @@ import ProfilePage from './components/ProfilePage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Modal from './components/Modal.jsx';
 import AddIcon from '@mui/icons-material/Add';
+import { fetchChats, setSearchTerm, setCurrentChatId } from './store/chatsSlice.js';
+import { fetchUsers } from './store/userSlice';
+import { sendMessage } from './store/messagesSlice';
 import './index.scss';
 
 function App() {
-  const { chats, currentChatId, setCurrentChatId, createChat, deleteChat, sendMessage } =
-    useChatData();
-
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { chats = [], currentChatId, searchTerm, isLoading } = useSelector((state) => state.chats);
+  const { availableUsers = [], isLoading: usersLoading } = useSelector((state) => state.users);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Лог для отслеживания состояния аутентификации
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsAuthenticated(true);
+    if (isAuthenticated) {
+      if (!chats.length) {
+        dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
+      }
+
+      if (!availableUsers.length) {
+        dispatch(fetchUsers({ userPageSize: 10 }));
+      }
     }
-    console.log('User authenticated:', isAuthenticated); // Лог аутентификации
-  }, [isAuthenticated]);
+  }, [dispatch, chats.length, availableUsers.length, isAuthenticated]);
 
-  // Лог для отслеживания списка чатов
-  useEffect(() => {
-    console.log('Chats:', chats); // Лог списка чатов
-  }, [chats]);
-
-  const handleSearch = (term) => setSearchTerm(term);
+  const handleSearch = (term) => {
+    dispatch(setSearchTerm(term));
+  };
 
   const handleChatSelect = (chat) => {
-    setCurrentChatId(chat.id);
+    dispatch(setCurrentChatId(chat.id));
     navigate(`/chat/${chat.id}`);
-    console.log('Selected chat:', chat); // Лог выбранного чата
   };
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   const handleCreateChat = async (chatTitle, isPrivate, membersArray = []) => {
-    console.log('Creating chat with title:', chatTitle); // Лог создания чата
     try {
-      await createChat(chatTitle, isPrivate, membersArray);
+      console.log('Создание чата:', { chatTitle, isPrivate, membersArray });
       closeModal();
     } catch (error) {
-      console.error('Failed to create chat:', error.message);
+      console.error('Не удалось создать чат:', error.message);
     }
   };
 
   const handleDeleteChat = async (chatId) => {
     try {
-      await deleteChat(chatId);
-      console.log(`Chat with ID ${chatId} deleted successfully`); // Лог удаления чата
+      console.log('Удаление чата:', chatId);
       navigate('/');
     } catch (error) {
-      console.error(`Failed to delete chat with ID ${chatId}:`, error.message);
+      console.error('Не удалось удалить чат:', error.message);
     }
   };
 
   const handleMessageSend = async (chatId, newMessage) => {
     try {
-      await sendMessage(chatId, newMessage);
-      console.log('Message sent to chat:', chatId); // Лог отправки сообщения
+      dispatch(sendMessage({ chatId, newMessage }));
     } catch (error) {
-      console.error('Error sending message:', error.message);
+      console.error('Ошибка отправки сообщения:', error.message);
     }
   };
 
@@ -99,7 +97,7 @@ function App() {
             <ProtectedRoute isAuthenticated={isAuthenticated}>
               <Header
                 searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
+                setSearchTerm={handleSearch}
                 onProfileClick={() => navigate('/profile')}
               />
               <ChatList
@@ -112,6 +110,7 @@ function App() {
                 }
                 onChatSelect={handleChatSelect}
                 searchTerm={searchTerm}
+                isLoading={isLoading || usersLoading}
                 onDeleteChat={handleDeleteChat}
               />
             </ProtectedRoute>
@@ -131,14 +130,7 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute isAuthenticated={isAuthenticated}>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/profile" element={<ProfilePage availableUsers={availableUsers} />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
 
@@ -151,17 +143,13 @@ function App() {
 
 function ChatRoute({ chats, currentChatId, onSendMessage, onBackClick, onDeleteChat }) {
   const { id } = useParams();
-  const chat = chats.find((chat) => chat.id === id);
+  const chat = chats.find((chat) => chat.id === currentChatId || chat.id === id);
 
-  useEffect(() => {
-    console.log('Current chat:', chat); // Лог текущего чата
-  }, [chat]);
-
-  if (!chat) return <div>Chat not found. Please try again.</div>;
+  if (!chat) return <div>Чат не найден. Пожалуйста, попробуйте снова.</div>;
 
   return (
     <ChatWindow
-      chatId={id}
+      chatId={chat.id}
       onSendMessage={onSendMessage}
       onBackClick={onBackClick}
       onDeleteChat={() => onDeleteChat(chat.id)}

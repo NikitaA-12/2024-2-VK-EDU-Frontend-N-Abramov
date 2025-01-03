@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { $api } from './api';
+import { $api } from '../api/api';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -17,14 +17,12 @@ const RegisterPage = () => {
     setLoading(true);
     setError('');
 
-    // Проверка обязательных полей
     if (!username || !firstName || !lastName || !bio || !password) {
       setError('All fields are required');
       setLoading(false);
       return;
     }
 
-    // Проверка формата аватара
     if (avatar && avatar.type !== 'image/jpeg' && avatar.type !== 'image/png') {
       setError('Avatar must be in jpg or png format');
       setLoading(false);
@@ -42,13 +40,12 @@ const RegisterPage = () => {
 
       const response = await $api.post('/register/', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data', // Устанавливаем тип контента для файлов
+          'Content-Type': 'multipart/form-data',
         },
       });
 
       console.log('Response:', response.data);
 
-      // Проверка наличия токенов в ответе
       if (response.data && response.data.access && response.data.refresh) {
         localStorage.setItem('token', response.data.access);
         localStorage.setItem('refresh', response.data.refresh);

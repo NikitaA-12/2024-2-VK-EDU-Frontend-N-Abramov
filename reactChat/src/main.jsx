@@ -1,15 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
-import { ChatProvider } from './components/ChatContext.jsx';
 import App from './App.jsx';
+import { Provider } from 'react-redux';
+import { store } from './store/store.js';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <HashRouter>
-      <ChatProvider>
+      <Provider store={store}>
         <App />
-      </ChatProvider>
+      </Provider>
     </HashRouter>
   </StrictMode>,
 );

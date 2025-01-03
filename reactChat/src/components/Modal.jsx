@@ -1,25 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { useChatData } from './ChatContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { createChat } from '../store/chatCreationSlice';
+import { fetchUsers, setSelectedUsers } from '../store/userSlice';
 
 const Modal = ({ isOpen, onClose }) => {
   const [chatName, setChatName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState(''); // State for search query
-  const {
-    createChat,
-    availableUsers,
-    handleUserSelection,
-    selectedUsers,
-    setUserPage,
-    userPage,
-    isLoading,
-  } = useChatData();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const dispatch = useDispatch();
+  const { availableUsers, selectedUsers, isLoading } = useSelector((state) => state.users);
+
+  useEffect(() => {
+    if (isOpen && availableUsers.length === 0) {
+      dispatch(fetchUsers({ userPageSize: 20 }));
+    }
+  }, [isOpen, availableUsers.length, dispatch]);
 
   const validateChatName = (name) => {
-    console.log('Validating chat name:', name);
-
     if (name.trim().length < 3) {
       return 'Название чата должно содержать не менее 3 символов.';
     }
@@ -30,55 +30,43 @@ const Modal = ({ isOpen, onClose }) => {
   };
 
   const handleCreateChat = async () => {
-    console.log('Attempting to create chat with name:', chatName, 'Private:', isPrivate);
-
     const trimmedName = chatName.trim();
     const validationError = validateChatName(trimmedName);
 
     if (validationError) {
-      console.warn('Validation error:', validationError);
       setErrorMessage(validationError);
       return;
     }
 
-    try {
-      console.log('Calling createChat method');
-      await createChat(trimmedName, isPrivate, selectedUsers);
-      console.log('Chat created successfully');
+    onClose();
 
+    try {
+      await dispatch(createChat({ title: trimmedName, isPrivate, membersArray: selectedUsers }));
       setChatName('');
       setIsPrivate(false);
       setErrorMessage('');
-      onClose();
-
-      console.log('Chat creation completed, closing modal');
     } catch (error) {
-      console.error('Ошибка при создании чата:', error);
       setErrorMessage('Не удалось создать чат. Попробуйте снова.');
+      onClose();
     }
   };
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      console.log('Enter key pressed, creating chat');
       e.preventDefault();
       handleCreateChat();
     }
   };
 
-  const handleModalClick = (e) => {
-    console.log('Modal content clicked');
-    e.stopPropagation();
-  };
-
   const handleSearchChange = (e) => {
-    console.log('Search input change:', e.target.value);
     setSearchQuery(e.target.value.toLowerCase());
   };
 
   const handleCheckboxChange = (userId, isChecked) => {
-    console.log('User selection changed:', userId, isChecked);
-    handleUserSelection(userId, isChecked);
+    const updatedSelectedUsers = isChecked
+      ? [...selectedUsers, userId]
+      : selectedUsers.filter((id) => id !== userId);
+    dispatch(setSelectedUsers(updatedSelectedUsers));
   };
 
   const filteredUsers = availableUsers.filter((user) =>
@@ -88,7 +76,7 @@ const Modal = ({ isOpen, onClose }) => {
   const handleScroll = (e) => {
     const bottom = e.target.scrollHeight === e.target.scrollTop + e.target.clientHeight;
     if (bottom && availableUsers.length % 20 === 0) {
-      setUserPage(userPage + 1);
+      dispatch(fetchUsers({ userPageSize: 20 }));
     }
   };
 
@@ -97,7 +85,7 @@ const Modal = ({ isOpen, onClose }) => {
       className={`modal ${isOpen ? 'open' : ''}`}
       onClick={onClose}
       style={{ display: isOpen ? 'flex' : 'none' }}>
-      <div className="modal-content" onClick={handleModalClick}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <span className="close" onClick={onClose}>
           &times;
         </span>
@@ -108,10 +96,7 @@ const Modal = ({ isOpen, onClose }) => {
           type="text"
           value={chatName}
           placeholder="Введите название чата"
-          onChange={(e) => {
-            console.log('Chat name input change:', e.target.value);
-            setChatName(e.target.value);
-          }}
+          onChange={(e) => setChatName(e.target.value)}
           onKeyDown={handleKeyDown}
           id="chatNameInput"
           required
@@ -122,35 +107,33 @@ const Modal = ({ isOpen, onClose }) => {
             <input
               type="checkbox"
               checked={isPrivate}
-              onChange={(e) => {
-                console.log('Private chat checkbox changed:', e.target.checked);
-                setIsPrivate(e.target.checked);
-              }}
+              onChange={(e) => setIsPrivate(e.target.checked)}
             />
             Приватный чат
           </label>
         </div>
 
-        <h3>Выберите участников (не обязательно)</h3>
+        <h3>Выберите участников</h3>
 
-        {/* Поле для поиска пользователей */}
         <input
           type="text"
           placeholder="Поиск пользователей по имени"
           value={searchQuery}
           onChange={handleSearchChange}
-          style={{ marginBottom: '10px', padding: '8px', width: '100%' }}
+          style={{ marginBottom: '10px', marginTop: '5px', padding: '8px', width: '100%' }}
         />
 
         <div
           className="user-selection"
-          onScroll={handleScroll} // Обработчик события прокрутки
+          onScroll={handleScroll}
           style={{ maxHeight: '200px', overflowY: 'auto' }}>
           {isLoading ? (
             <p>Загрузка пользователей...</p>
           ) : (
             filteredUsers.map((user) => (
-              <div key={user.id}>
+              <div
+                key={user.id}
+                className={`user-row ${selectedUsers.includes(user.id) ? 'selected' : ''}`}>
                 <input
                   type="checkbox"
                   id={`user-${user.id}`}
@@ -158,6 +141,7 @@ const Modal = ({ isOpen, onClose }) => {
                   onChange={(e) => handleCheckboxChange(user.id, e.target.checked)}
                 />
                 <label htmlFor={`user-${user.id}`}>{user.username}</label>
+                <hr />
               </div>
             ))
           )}
@@ -168,10 +152,8 @@ const Modal = ({ isOpen, onClose }) => {
         <button
           id="createChatButton"
           onClick={handleCreateChat}
-          disabled={!chatName.trim()} // Отключаем кнопку только если название чата пустое
-          style={{
-            cursor: !chatName.trim() ? 'not-allowed' : 'pointer',
-          }}>
+          disabled={!chatName.trim()}
+          style={{ cursor: !chatName.trim() ? 'not-allowed' : 'pointer' }}>
           Создать чат
         </button>
       </div>

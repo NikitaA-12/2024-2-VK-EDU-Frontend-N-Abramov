@@ -6,14 +6,13 @@ const ProtectedRoute = ({ children }) => {
 
   useEffect(() => {
     const authStatus = localStorage.getItem('isAuthenticated');
-    setIsAuthenticated(authStatus === 'true'); // Проверяем статус аутентификации
+    setIsAuthenticated(authStatus === 'true');
   }, []);
 
   if (isAuthenticated === null) {
     return <div>Loading...</div>;
   }
 
-  // Если пользователь аутентифицирован, показываем дочерние компоненты, иначе перенаправляем на страницу логина
   return isAuthenticated ? children : <Navigate to="/login" />;
 };
 

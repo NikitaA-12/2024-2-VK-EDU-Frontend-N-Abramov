@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import { useChatData } from './ChatContext';
+import { useDispatch, useSelector } from 'react-redux';
 import ChatItem from './ChatItem';
 import Modal from './Modal';
-import $api from './api';
+import { fetchChats, removeChatFromState } from '../store/chatsSlice';
+import $api from '../api/api';
 
 const ChatList = ({ onChatSelect, searchTerm }) => {
-  const { chats, setChats, currentChatId } = useChatData();
+  const { chats, currentChatId, isLoading, error } = useSelector((state) => state.chats);
+  const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [chatName, setChatName] = useState('');
   const [deletingChatId, setDeletingChatId] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
+  }, [dispatch]);
 
   const saveChatsToLocalStorage = (updatedChats) => {
     try {
@@ -20,39 +26,15 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
     }
   };
 
-  useEffect(() => {
-    if (!Array.isArray(chats)) {
-      console.error('Chats is not an array:', chats);
-      return;
-    }
-
-    const updatedChats = [...chats].sort((a, b) => {
-      const lastMessageA = a.last_message?.created_at
-        ? new Date(a.last_message.created_at).getTime()
-        : 0;
-      const lastMessageB = b.last_message?.created_at
-        ? new Date(b.last_message.created_at).getTime()
-        : 0;
-
-      if (lastMessageB !== lastMessageA) return lastMessageB - lastMessageA;
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-
-    if (JSON.stringify(updatedChats) !== JSON.stringify(chats)) {
-      console.log('Chats updated and sorted');
-      setChats(updatedChats);
-      saveChatsToLocalStorage(updatedChats);
-    }
-  }, [chats, setChats]);
-
   const deleteChat = async (chatId) => {
     setDeletingChatId(chatId);
     try {
       console.log(`Deleting chat with ID: ${chatId}`);
       await $api.delete(`/chat/${chatId}/`);
 
+      dispatch(removeChatFromState(chatId));
+
       const updatedChats = chats.filter((chat) => chat.id !== chatId);
-      setChats(updatedChats);
       saveChatsToLocalStorage(updatedChats);
 
       console.log('Chat deleted successfully');
@@ -80,7 +62,7 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
       console.log('New chat received from API:', newChat);
 
       const updatedChats = [newChat, ...chats];
-      setChats(updatedChats);
+      dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
       saveChatsToLocalStorage(updatedChats);
 
       console.log('New chat created and state updated');
@@ -94,14 +76,17 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
     ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
     : [];
 
-  if (!Array.isArray(filteredChats)) {
-    console.error('Filtered chats is not an array:', filteredChats);
+  if (isLoading) {
+    return (
+      <div className="loadingChatsWrapper">
+        <span>Загрузка чатов</span>
+      </div>
+    );
   }
 
-  const formatTime = (isoString) => {
-    const date = new Date(isoString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
+  if (error) {
+    return <div>Error loading chats: {error}</div>;
+  }
 
   return (
     <div className="chatlist">
@@ -114,9 +99,6 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
               isActive={chat.id === currentChatId}
               onClick={() => onChatSelect(chat)}
               onDelete={() => deleteChat(chat.id)}
-              lastMessageTime={
-                chat.last_message?.created_at ? formatTime(chat.last_message.created_at) : ''
-              }
               lastMessageContent={chat.last_message?.content || 'Нет сообщений'}
               isDeleting={deletingChatId === chat.id}
             />

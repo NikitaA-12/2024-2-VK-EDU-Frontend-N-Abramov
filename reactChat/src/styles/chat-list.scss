@@ -21,52 +21,82 @@
 }
 
 .imgBx {
-  margin-right: 10px; /* Отступ между аватаркой и текстом */
+  margin-right: 10px;
 }
 
 .details {
   flex: 1;
 }
 
-.chatAvatar {
-  position: relative;
-  width: 45px;
-  height: 45px;
-  overflow: hidden;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-/* Анимация появления с плавным подъёмом */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(-10px); /* Элемент поднимается с нижней позиции */
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0); /* Элемент возвращается в исходное положение */
+    transform: translateY(0);
   }
 }
 
-/* Класс для применения анимации появления */
 .fadeIn {
   animation: fadeIn 0.5s ease-in-out forwards;
 }
 
-/* Анимация исчезновения с плавным отъездом */
 @keyframes fadeOut {
   from {
     opacity: 1;
-    transform: translateY(0); /* Элемент в нормальном положении */
+    transform: translateY(0);
   }
   to {
     opacity: 0;
-    transform: translateY(-10px); /* Элемент уходит вверх */
+    transform: translateY(-10px);
   }
 }
 
-/* Класс для применения анимации исчезновения */
 .fadeOut {
   animation: fadeOut 0.3s ease-in-out forwards;
+}
+
+.loadingChatsWrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  color: #6b7df4;
+  font-size: 1.2em;
+  font-weight: 500;
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.loadingChatsWrapper span {
+  display: inline-block;
+  animation: pulse 1s ease-in-out infinite;
+  font-size: 1.3em;
+  font-weight: bold;
 }

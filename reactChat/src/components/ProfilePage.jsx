@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { $api } from './api'; // Импортируем API
+import { $api } from '../api/api';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -12,7 +12,6 @@ const ProfilePage = () => {
   const [bio, setBio] = useState('');
   const [error, setError] = useState('');
 
-  // Загрузка данных профиля при загрузке страницы
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
@@ -33,7 +32,6 @@ const ProfilePage = () => {
         setFullName(`${first_name || ''} ${last_name || ''}`.trim());
         setBio(bio || '');
 
-        // Сохраняем профиль в localStorage
         localStorage.setItem('profile', JSON.stringify(response.data));
       } catch (error) {
         console.error('Error fetching profile:', error.response?.data || error.message);

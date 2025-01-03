@@ -4,7 +4,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: 'Open Sans', sans-serif; /* Применяем Open Sans ко всем элементам */
+  font-family: 'Open Sans', sans-serif;
 }
 
 body {
@@ -129,4 +129,10 @@ header {
       transform: scale(1.1);
     }
   }
+}
+
+.error-message {
+  color: red;
+  font-size: 14px;
+  margin-top: 10px;
 }

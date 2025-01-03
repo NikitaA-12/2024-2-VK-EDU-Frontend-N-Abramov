@@ -2,55 +2,32 @@ import PropTypes from 'prop-types';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
-import { useChatData } from './ChatContext';
+import { useDispatch } from 'react-redux';
+import { selectChat } from '../store/chatsSlice';
+import { format } from 'date-fns';
 
-const ChatItem = ({ chat, isActive, onClick, onDelete, isDeleting }) => {
-  const { setChats } = useChatData();
+const ChatItem = ({ chat, onClick, onDelete, isDeleting }) => {
+  const dispatch = useDispatch();
 
-  const lastMessageContent = chat.last_message?.text || 'Нет сообщений';
-  const lastMessageTime = chat.last_message?.time;
-
-  const handleMessageUpdate = (newMessage) => {
-    setChats((prevChats) =>
-      prevChats.map((updatedChat) =>
-        updatedChat.id === chat.id
-          ? {
-              ...updatedChat,
-              last_message: newMessage,
-            }
-          : updatedChat,
-      ),
-    );
+  const handleChatSelect = () => {
+    dispatch(selectChat(chat.id));
+    onClick();
   };
 
+  const lastMessageContent =
+    chat.last_message && chat.last_message.text ? chat.last_message.text : 'Нет сообщений';
+  const lastMessageTime =
+    chat.last_message && chat.last_message.created_at ? chat.last_message.created_at : '';
+
+  const formattedTime = lastMessageTime ? format(new Date(lastMessageTime), 'HH:mm ') : '';
+
   return (
-    <div className={`block ${isDeleting ? 'fadeOut' : ''}`} onClick={onClick}>
-      <div className="imgBx">
+    <div className={`block ${isDeleting ? 'fadeOut' : ''}`} onClick={handleChatSelect}>
+      <div className="imgBx-item">
         {chat.avatar ? (
-          <img
-            className="chatAvatar"
-            src={chat.avatar}
-            alt="Chat avatar"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
+          <img src={chat.avatar} alt="Chat Avatar" className="chatAvatar" />
         ) : (
-          <div
-            className="avatarLetter"
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              fontSize: '24px',
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              color: '#fafafa',
-              backgroundColor: '#8f9efe',
-            }}>
-            {chat.title.charAt(0).toUpperCase()}
-          </div>
+          <div className="avatarLetter">{chat.title[0]}</div>
         )}
       </div>
 
@@ -68,17 +45,22 @@ const ChatItem = ({ chat, isActive, onClick, onDelete, isDeleting }) => {
               size="small">
               <DeleteIcon fontSize="small" />
             </IconButton>
-
-            <p className="time">{lastMessageTime}</p>
           </div>
         </div>
 
         <div className="message_p">
-          <p>{lastMessageContent}</p>
+          <div className="message-item">
+            <p>{lastMessageContent}</p>
+          </div>
+          <div className="time-item">
+            {formattedTime && <span className="time-stamp">{formattedTime}</span>}
+          </div>
           {chat.unread_messages_count > 0 && (
             <span className="unread-count">{chat.unread_messages_count}</span>
           )}
-          <DoneAllIcon fontSize="small" className="read" />
+          <div className="read-wrapper">
+            <DoneAllIcon fontSize="small" className="read" />
+          </div>
         </div>
       </div>
     </div>
@@ -91,12 +73,11 @@ ChatItem.propTypes = {
     title: PropTypes.string.isRequired,
     avatar: PropTypes.string,
     last_message: PropTypes.shape({
-      time: PropTypes.string,
+      created_at: PropTypes.string,
       text: PropTypes.string,
     }),
     unread_messages_count: PropTypes.number,
   }).isRequired,
-  isActive: PropTypes.bool,
   onClick: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   isDeleting: PropTypes.bool,
