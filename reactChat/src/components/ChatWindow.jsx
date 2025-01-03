@@ -185,7 +185,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
                     />
                   )}
                   <div className="message-content">
-                    {isOutgoing && <span className="username">{msg.sender?.username}</span>}
+                    {<span className="username">{msg.sender?.username}</span>}
                     <div
                       className={`message-text ${
                         isOutgoing ? 'outgoing-message' : 'incoming-message'
