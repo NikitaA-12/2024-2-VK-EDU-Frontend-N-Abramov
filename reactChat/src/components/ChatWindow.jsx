@@ -99,7 +99,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
 
     setLocalMessages((prevMessages) => {
       if (Array.isArray(prevMessages)) {
-        return [tempMessage, ...prevMessages];
+        return [...prevMessages, tempMessage];
       }
       return [tempMessage];
     });
