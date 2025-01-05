@@ -33,10 +33,6 @@ function App() {
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  if (isAuthenticated === undefined) {
-    return <div>Загрузка...</div>;
-  }
-
   useEffect(() => {
     if (isAuthenticated) {
       if (!chats.length) {
