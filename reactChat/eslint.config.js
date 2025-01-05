@@ -1,24 +1,27 @@
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import pluginReact from 'eslint-plugin-react';
+import globals from 'globals'
+import pluginJs from '@eslint/js'
+import pluginReact from 'eslint-plugin-react'
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    files: ['**/*.{js,mjs,cjs,jsx}'],
+    files: ['**/*.{js,mjs,cjs,jsx}']
   },
   {
     languageOptions: {
-      globals: globals.browser,
-    },
+      globals: globals.browser
+    }
   },
   pluginJs.configs.recommended,
   pluginReact.configs.flat.recommended,
   {
     settings: {
       react: {
-        version: '18.3',
-      },
+        version: '18.3'
+      }
     },
-  },
-];
+    rules: {
+      'react/react-in-jsx-scope': 'off'
+    }
+  }
+]

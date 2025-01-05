@@ -13,5 +13,8 @@
     "react": {
       "version": "18.3"
     }
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off"
   }
 }
