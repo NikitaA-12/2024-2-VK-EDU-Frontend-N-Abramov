@@ -1,14 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
-import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
-  useParams,
-  HashRouter,
-} from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Header from './components/Header.jsx';
 import ChatList from './components/ChatList.jsx';
@@ -20,18 +11,35 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Modal from './components/Modal.jsx';
 import AddIcon from '@mui/icons-material/Add';
 import { fetchChats, setSearchTerm, setCurrentChatId } from './store/chatsSlice.js';
-import { fetchUsers } from './store/userSlice';
+import { fetchUsers, setAuthenticated } from './store/userSlice';
 import { sendMessage } from './store/messagesSlice';
 import './index.scss';
+import PropTypes from 'prop-types';
 
 function App() {
-  const { chats = [], currentChatId, searchTerm, isLoading } = useSelector((state) => state.chats);
-  const { availableUsers = [], isLoading: usersLoading } = useSelector((state) => state.users);
-  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated); // Redux auth state
+  const {
+    chats = [],
+    currentChatId,
+    searchTerm,
+    isLoading,
+  } = useSelector((state) => state.chats || {});
+  const { availableUsers = [], isLoading: usersLoading } = useSelector(
+    (state) => state.users || {},
+  );
+  const { isAuthenticated } = useSelector((state) => state.users || {});
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      dispatch(setAuthenticated(true));
+    } else {
+      dispatch(setAuthenticated(false));
+    }
+  }, [dispatch]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -88,80 +96,78 @@ function App() {
   const isOnChatListPage = location.pathname === '/';
 
   return (
-    <HashRouter>
-      <div className="container">
-        {isOnChatListPage && (
-          <div className="quickBtn">
-            <button className="createChatButton" onClick={openModal}>
-              <AddIcon />
-            </button>
-          </div>
-        )}
+    <div className="container">
+      {isOnChatListPage && (
+        <div className="quickBtn">
+          <button className="createChatButton" onClick={openModal}>
+            <AddIcon />
+          </button>
+        </div>
+      )}
 
-        <Routes>
-          <Route
-            path="/login"
-            element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
-          />
-          <Route
-            path="/register"
-            element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />}
-          />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <Header
-                  searchTerm={searchTerm}
-                  setSearchTerm={handleSearch}
-                  onProfileClick={() => navigate('/profile')}
-                />
-                <ChatList
-                  chats={
-                    searchTerm
-                      ? chats.filter((chat) =>
-                          chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
-                        )
-                      : chats
-                  }
-                  onChatSelect={handleChatSelect}
-                  searchTerm={searchTerm}
-                  isLoading={isLoading || usersLoading}
-                  onDeleteChat={handleDeleteChat}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/chat/:id"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <ChatRoute
-                  chats={chats}
-                  currentChatId={currentChatId}
-                  onSendMessage={handleMessageSend}
-                  onBackClick={handleBackClick}
-                  onDeleteChat={handleDeleteChat}
-                />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
-                <ProfilePage availableUsers={availableUsers} />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/" />
+            ) : (
+              <LoginPage onLogin={() => dispatch(setAuthenticated(true))} />
+            )
+          }
+        />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <Header
+                searchTerm={searchTerm}
+                setSearchTerm={handleSearch}
+                onProfileClick={() => navigate('/profile')}
+                onSearch={handleSearch}
+              />
+              <ChatList
+                chats={
+                  searchTerm
+                    ? chats.filter((chat) =>
+                        chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
+                      )
+                    : chats
+                }
+                onChatSelect={handleChatSelect}
+                searchTerm={searchTerm}
+                isLoading={isLoading || usersLoading}
+                onDeleteChat={handleDeleteChat}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/chat/:id"
+          element={
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <ChatRoute
+                chats={chats}
+                currentChatId={currentChatId}
+                onSendMessage={handleMessageSend}
+                onBackClick={handleBackClick}
+                onDeleteChat={handleDeleteChat}
+              />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={<ProfilePage availableUsers={availableUsers} navigate={navigate} />}
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
 
-        {isModalOpen && (
-          <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreateChat} />
-        )}
-      </div>
-    </HashRouter>
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={closeModal} onCreate={handleCreateChat} />
+      )}
+    </div>
   );
 }
 
@@ -181,26 +187,9 @@ function ChatRoute({ chats, currentChatId, onSendMessage, onBackClick, onDeleteC
   );
 }
 
-App.propTypes = {
-  chats: PropTypes.array.isRequired,
-  currentChatId: PropTypes.string.isRequired,
-  searchTerm: PropTypes.string.isRequired,
-  isLoading: PropTypes.bool.isRequired,
-  availableUsers: PropTypes.array.isRequired,
-  isModalOpen: PropTypes.bool.isRequired,
-  handleSearch: PropTypes.func.isRequired,
-  handleChatSelect: PropTypes.func.isRequired,
-  openModal: PropTypes.func.isRequired,
-  closeModal: PropTypes.func.isRequired,
-  handleCreateChat: PropTypes.func.isRequired,
-  handleDeleteChat: PropTypes.func.isRequired,
-  handleMessageSend: PropTypes.func.isRequired,
-  handleBackClick: PropTypes.func.isRequired,
-};
-
 ChatRoute.propTypes = {
   chats: PropTypes.array.isRequired,
-  currentChatId: PropTypes.string.isRequired,
+  currentChatId: PropTypes.string,
   onSendMessage: PropTypes.func.isRequired,
   onBackClick: PropTypes.func.isRequired,
   onDeleteChat: PropTypes.func.isRequired,
