@@ -27,7 +27,7 @@ import './index.scss';
 function App() {
   const { chats = [], currentChatId, searchTerm, isLoading } = useSelector((state) => state.chats);
   const { availableUsers = [], isLoading: usersLoading } = useSelector((state) => state.users);
-  const isAuthenticated = useSelector((state) => state.auth?.isAuthenticated);
+  const isAuthenticated = useSelector((state) => state.auth.isAuthenticated); // Redux auth state
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
