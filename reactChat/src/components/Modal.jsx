@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import { createChat } from '../store/chatCreationSlice';
@@ -69,9 +69,9 @@ const Modal = ({ isOpen, onClose }) => {
     dispatch(setSelectedUsers(updatedSelectedUsers));
   };
 
-  const filteredUsers = availableUsers.filter((user) =>
-    user.username.toLowerCase().includes(searchQuery),
-  );
+  const filteredUsers = useMemo(() => {
+    return availableUsers.filter((user) => user.username.toLowerCase().includes(searchQuery));
+  }, [availableUsers, searchQuery]);
 
   const handleScroll = (e) => {
     const bottom = e.target.scrollHeight === e.target.scrollTop + e.target.clientHeight;

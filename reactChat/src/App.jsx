@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import Header from './components/Header.jsx';
@@ -53,14 +53,20 @@ function App() {
     }
   }, [dispatch, chats.length, availableUsers.length, isAuthenticated]);
 
-  const handleSearch = (term) => {
-    dispatch(setSearchTerm(term));
-  };
+  const handleSearch = useCallback(
+    (term) => {
+      dispatch(setSearchTerm(term));
+    },
+    [dispatch],
+  );
 
-  const handleChatSelect = (chat) => {
-    dispatch(setCurrentChatId(chat.id));
-    navigate(`/chat/${chat.id}`);
-  };
+  const handleChatSelect = useCallback(
+    (chat) => {
+      dispatch(setCurrentChatId(chat.id));
+      navigate(`/chat/${chat.id}`);
+    },
+    [dispatch, navigate],
+  );
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -83,17 +89,26 @@ function App() {
     }
   };
 
-  const handleMessageSend = async (chatId, newMessage) => {
-    try {
-      dispatch(sendMessage({ chatId, newMessage }));
-    } catch (error) {
-      console.error('Ошибка отправки сообщения:', error.message);
-    }
-  };
+  const handleMessageSend = useCallback(
+    async (chatId, newMessage) => {
+      try {
+        dispatch(sendMessage({ chatId, newMessage }));
+      } catch (error) {
+        console.error('Ошибка отправки сообщения:', error.message);
+      }
+    },
+    [dispatch],
+  );
 
   const handleBackClick = () => navigate('/');
 
   const isOnChatListPage = location.pathname === '/';
+
+  const filteredChats = useMemo(() => {
+    return searchTerm
+      ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      : chats;
+  }, [chats, searchTerm]);
 
   return (
     <div className="container">
@@ -128,13 +143,7 @@ function App() {
                 onSearch={handleSearch}
               />
               <ChatList
-                chats={
-                  searchTerm
-                    ? chats.filter((chat) =>
-                        chat.title.toLowerCase().includes(searchTerm.toLowerCase()),
-                      )
-                    : chats
-                }
+                chats={filteredChats}
                 onChatSelect={handleChatSelect}
                 searchTerm={searchTerm}
                 isLoading={isLoading || usersLoading}

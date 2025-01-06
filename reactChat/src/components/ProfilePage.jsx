@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { $api } from '../api/api';
+import LazyImage from './LazyImage';
 
 const ProfilePage = () => {
   const navigate = useNavigate();
@@ -14,6 +15,19 @@ const ProfilePage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const loadProfile = () => {
+      const profileData = localStorage.getItem('profile');
+      if (profileData) {
+        const { avatar, username, first_name, last_name, bio } = JSON.parse(profileData);
+        setAvatar(avatar || null);
+        setUsername(username || '');
+        setFullName(`${first_name || ''} ${last_name || ''}`.trim());
+        setBio(bio || '');
+      } else {
+        fetchProfile();
+      }
+    };
+
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -40,7 +54,7 @@ const ProfilePage = () => {
       }
     };
 
-    fetchProfile();
+    loadProfile();
   }, []);
 
   const handleSave = async () => {
@@ -134,9 +148,9 @@ const ProfilePage = () => {
         <div className="avatar-container" onClick={handleAvatarContainerClick}>
           {avatar ? (
             avatar instanceof File ? (
-              <img src={URL.createObjectURL(avatar)} alt="User Avatar" className="avatar" />
+              <LazyImage src={URL.createObjectURL(avatar)} alt="User Avatar" className="avatar" />
             ) : (
-              <img src={avatar} alt="User Avatar" className="avatar" />
+              <LazyImage src={avatar} alt="User Avatar" className="avatar" />
             )
           ) : (
             <div className="avatar-placeholder">+</div>

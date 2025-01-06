@@ -8,6 +8,7 @@ import { selectCurrentChat, setCurrentChat } from '../store/chatsSlice';
 import { fetchCurrentUser, selectCurrentUser } from '../store/userSlice';
 import { useParams } from 'react-router-dom';
 import useLoadAllMessages from '../hooks/useLoadAllMessages';
+import LazyImage from './LazyImage';
 
 const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
   const dispatch = useDispatch();
@@ -17,23 +18,18 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
 
   const [inputMessage, setInputMessage] = useState('');
   const [localMessages, setLocalMessages] = useState([]);
+  const [scrollOnSend, setScrollOnSend] = useState(false);
+
   const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
+  const initialScrollDone = useRef(false);
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
   }, [dispatch]);
 
   useEffect(() => {
-    if (currentUser) {
-      console.log('Текущий пользователь загружен:', currentUser);
-    } else {
-      console.log('Текущий пользователь не загружен');
-    }
-  }, [currentUser]);
-
-  useEffect(() => {
     if (chatId && !currentChat) {
-      console.log('Устанавливаем текущий чат с ID:', chatId);
       dispatch(setCurrentChat(chatId));
     } else {
       console.log('Чат уже установлен или ID чата отсутствует');
@@ -43,41 +39,52 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
   const { allMessages, loading, error } = useLoadAllMessages(chatId);
 
   useEffect(() => {
-    if (loading) {
-      console.log('Загрузка сообщений началась...');
-    }
-    if (error) {
-      console.error('Ошибка при загрузке сообщений:', error);
-    }
-  }, [loading, error]);
-
-  useEffect(() => {
     if (allMessages && typeof allMessages === 'object') {
-      console.log('Группировка сообщений по датам...');
       const messagesArray = Object.keys(allMessages).reduce((acc, date) => {
         return acc.concat(allMessages[date]);
       }, []);
 
-      setLocalMessages(messagesArray.reverse());
-    } else {
-      console.error('All messages data is not an object:', allMessages);
+      const sortedMessages = messagesArray.sort(
+        (a, b) => new Date(a.created_at) - new Date(b.created_at),
+      );
+
+      setLocalMessages(sortedMessages);
+      initialScrollDone.current = false;
     }
   }, [allMessages]);
 
   useEffect(() => {
-    scrollToBottom();
+    if (!initialScrollDone.current && localMessages.length > 0) {
+      scrollToBottom(false);
+      initialScrollDone.current = true;
+    }
   }, [localMessages]);
 
-  const scrollToBottom = () => {
+  useEffect(() => {
+    if (scrollOnSend) {
+      scrollToBottom(true);
+      setScrollOnSend(false);
+    }
+  }, [scrollOnSend]);
+
+  const scrollToBottom = (smooth = true) => {
     if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
     }
   };
 
   const adjustTextareaHeight = (e) => {
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    const textarea = e.target || textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  };
+
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
   };
 
   const handleSendMessage = async () => {
@@ -85,7 +92,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
 
     const tempMessage = {
       id: `temp-${Date.now()}`,
-      chatId: chatId,
+      chatId,
       text: inputMessage,
       sender: {
         id: currentUser.id,
@@ -95,24 +102,34 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
       created_at: new Date().toISOString(),
     };
 
-    console.log('Отправка временного сообщения:', tempMessage);
-
     setLocalMessages((prevMessages) => {
-      if (Array.isArray(prevMessages)) {
-        return [...prevMessages, tempMessage];
-      }
-      return [tempMessage];
+      const updatedMessages = [...prevMessages, tempMessage];
+      localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
+      return updatedMessages;
     });
 
+    setScrollOnSend(true);
+
     setInputMessage('');
+    resetTextareaHeight();
 
     try {
-      console.log('Пытаемся отправить сообщение...');
-      await dispatch(sendMessage({ chatId, text: inputMessage })).unwrap();
-      console.log('Сообщение отправлено успешно!');
+      const sentMessage = await dispatch(sendMessage({ chatId, text: inputMessage })).unwrap();
+
+      setLocalMessages((prevMessages) => {
+        const updatedMessages = prevMessages.map((msg) =>
+          msg.id === tempMessage.id ? sentMessage : msg,
+        );
+        localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
     } catch (error) {
       console.error('Ошибка отправки сообщения:', error.message);
-      setLocalMessages((prevMessages) => prevMessages.filter((msg) => msg.id !== tempMessage.id));
+      setLocalMessages((prevMessages) => {
+        const updatedMessages = prevMessages.filter((msg) => msg.id !== tempMessage.id);
+        localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
+        return updatedMessages;
+      });
     }
   };
 
@@ -140,7 +157,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
           <div className="imgcontent">
             <div className="imgBx">
               {currentChat.avatar ? (
-                <img src={currentChat.avatar} alt="Chat Avatar" className="avatar" />
+                <LazyImage src={currentChat.avatar} alt="Chat Avatar" className="avatar" />
               ) : (
                 <div className="default-avatar">{currentChat.title[0]}</div>
               )}
@@ -171,21 +188,21 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
               return (
                 <div key={msg.id} className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                   {!isOutgoing && msg.sender?.avatar && (
-                    <img
+                    <LazyImage
                       src={msg.sender.avatar}
                       alt={`${msg.sender.username}'s avatar`}
                       className="avatar"
                     />
                   )}
                   {isOutgoing && msg.sender?.avatar && (
-                    <img
+                    <LazyImage
                       src={msg.sender.avatar}
                       alt={`${msg.sender.username}'s avatar`}
                       className="avatar"
                     />
                   )}
                   <div className="message-content">
-                    {<span className="username">{msg.sender?.username}</span>}
+                    <span className="username">{msg.sender?.username}</span>
                     <div
                       className={`message-text ${
                         isOutgoing ? 'outgoing-message' : 'incoming-message'
@@ -212,6 +229,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
           id="messageInput"
           placeholder="Введите сообщение..."
           rows="1"
+          ref={textareaRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onInput={adjustTextareaHeight}

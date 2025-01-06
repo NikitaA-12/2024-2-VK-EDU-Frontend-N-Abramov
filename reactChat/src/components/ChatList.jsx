@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import React from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import { useDispatch, useSelector } from 'react-redux';
 import ChatItem from './ChatItem';
@@ -26,24 +27,27 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
     }
   };
 
-  const deleteChat = async (chatId) => {
-    setDeletingChatId(chatId);
-    try {
-      console.log(`Deleting chat with ID: ${chatId}`);
-      await $api.delete(`/chat/${chatId}/`);
+  const deleteChat = useCallback(
+    async (chatId) => {
+      setDeletingChatId(chatId);
+      try {
+        console.log(`Deleting chat with ID: ${chatId}`);
+        await $api.delete(`/chat/${chatId}/`);
 
-      dispatch(removeChatFromState(chatId));
+        dispatch(removeChatFromState(chatId));
 
-      const updatedChats = chats.filter((chat) => chat.id !== chatId);
-      saveChatsToLocalStorage(updatedChats);
+        const updatedChats = chats.filter((chat) => chat.id !== chatId);
+        saveChatsToLocalStorage(updatedChats);
 
-      console.log('Chat deleted successfully');
-    } catch (error) {
-      console.error('Error deleting chat:', error.message);
-    } finally {
-      setDeletingChatId(null);
-    }
-  };
+        console.log('Chat deleted successfully');
+      } catch (error) {
+        console.error('Error deleting chat:', error.message);
+      } finally {
+        setDeletingChatId(null);
+      }
+    },
+    [chats, dispatch],
+  );
 
   const handleCreateChat = async (title, isPrivate) => {
     try {
@@ -72,9 +76,11 @@ const ChatList = ({ onChatSelect, searchTerm }) => {
     }
   };
 
-  const filteredChats = Array.isArray(chats)
-    ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
-    : [];
+  const filteredChats = useMemo(() => {
+    return Array.isArray(chats)
+      ? chats.filter((chat) => chat.title.toLowerCase().includes(searchTerm.toLowerCase()))
+      : [];
+  }, [chats, searchTerm]);
 
   if (isLoading) {
     return (
@@ -124,4 +130,4 @@ ChatList.propTypes = {
   searchTerm: PropTypes.string.isRequired,
 };
 
-export default ChatList;
+export default React.memo(ChatList);
