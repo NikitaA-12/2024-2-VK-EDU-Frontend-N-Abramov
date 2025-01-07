@@ -6,7 +6,7 @@
     "esModuleInterop": true, // Включаем поддержку ES модуля для импорта CommonJS
     "skipLibCheck": true, // Пропускаем проверку библиотек
     "forceConsistentCasingInFileNames": true, // Следим за консистентностью имен файлов
-    "outDir": "./dist", // Директория для скомпилированных файлов
+    "outDir": "dist", // Директория для скомпилированных файлов
     "allowJs": true, // Разрешаем работу с JS файлами
     "strict": true // Включаем строгий режим
   },
