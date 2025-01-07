@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import PropTypes from 'prop-types';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -5,27 +6,34 @@ import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useDispatch } from 'react-redux';
 import { selectChat } from '../store/chatsSlice';
 import { format } from 'date-fns';
+import LazyImage from './LazyImage';
+import { useCallback, useMemo } from 'react';
 
-const ChatItem = ({ chat, onClick, onDelete, isDeleting = false }) => {
+const ChatItem = memo(({ chat, onClick, onDelete, isDeleting = false }) => {
   const dispatch = useDispatch();
 
-  const handleChatSelect = () => {
+  const handleChatSelect = useCallback(() => {
     dispatch(selectChat(chat.id));
     onClick();
-  };
+  }, [dispatch, onClick, chat.id]);
 
-  const lastMessageContent =
-    chat.last_message && chat.last_message.text ? chat.last_message.text : 'Нет сообщений';
-  const lastMessageTime =
-    chat.last_message && chat.last_message.created_at ? chat.last_message.created_at : '';
+  const lastMessageContent = useMemo(() => {
+    return chat.last_message?.text || 'Нет сообщений';
+  }, [chat.last_message]);
 
-  const formattedTime = lastMessageTime ? format(new Date(lastMessageTime), 'HH:mm ') : '';
+  const lastMessageTime = useMemo(() => {
+    return chat.last_message?.created_at || '';
+  }, [chat.last_message]);
+
+  const formattedTime = useMemo(() => {
+    return lastMessageTime ? format(new Date(lastMessageTime), 'HH:mm ') : '';
+  }, [lastMessageTime]);
 
   return (
     <div className={`block ${isDeleting ? 'fadeOut' : ''}`} onClick={handleChatSelect}>
       <div className="imgBx-item">
         {chat.avatar ? (
-          <img src={chat.avatar} alt="Chat Avatar" className="chatAvatar" />
+          <LazyImage src={chat.avatar} alt="Chat Avatar" className="chatAvatar" />
         ) : (
           <div className="avatarLetter">{chat.title[0]}</div>
         )}
@@ -65,7 +73,9 @@ const ChatItem = ({ chat, onClick, onDelete, isDeleting = false }) => {
       </div>
     </div>
   );
-};
+});
+
+ChatItem.displayName = 'ChatItem';
 
 ChatItem.propTypes = {
   chat: PropTypes.shape({

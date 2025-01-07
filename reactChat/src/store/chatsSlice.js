@@ -12,7 +12,6 @@ export const fetchChats = createAsyncThunk(
         cachedChats && lastFetchTime && Date.now() - lastFetchTime < 5 * 60 * 1000;
 
       if (isCacheValid) {
-        console.log('Using cached chats data');
         return cachedChats;
       }
 
@@ -33,7 +32,6 @@ export const fetchChats = createAsyncThunk(
 
       localStorage.setItem('chats', JSON.stringify(chatsWithLastMessage));
       localStorage.setItem('chatsLastFetchTime', Date.now());
-      console.log('Fetched chats from API:', chatsWithLastMessage);
       return chatsWithLastMessage;
     } catch (err) {
       if (err.response?.status === 401) {
@@ -68,18 +66,30 @@ export const selectChat = createAsyncThunk(
   'chats/selectChat',
   async (chatId, { rejectWithValue }) => {
     try {
+      const cachedMessages = JSON.parse(localStorage.getItem(`messages-${chatId}`));
+      const lastFetchTime = localStorage.getItem(`messagesLastFetchTime-${chatId}`);
+      const isCacheValid =
+        cachedMessages && lastFetchTime && Date.now() - lastFetchTime < 5 * 60 * 1000;
+
+      if (isCacheValid) {
+        return { chatId, messages: cachedMessages };
+      }
+
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Токен отсутствует');
       }
 
-      console.log('Selecting chat with ID:', chatId);
       const response = await $api.get(`/messages/?chat=${chatId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      console.log('Fetched messages for chat:', chatId, response.data.results);
-      return { chatId, messages: response.data.results };
+      const messages = response.data.results;
+
+      localStorage.setItem(`messages-${chatId}`, JSON.stringify(messages));
+      localStorage.setItem(`messagesLastFetchTime-${chatId}`, Date.now());
+
+      return { chatId, messages };
     } catch (err) {
       console.error('Error selecting chat:', err.response?.data || err.message);
       return rejectWithValue(err.response?.data || err.message);
@@ -106,7 +116,6 @@ export const removeChat = createAsyncThunk(
       const updatedChats = cachedChats.filter((chat) => chat.id !== chatId);
       localStorage.setItem('chats', JSON.stringify(updatedChats));
 
-      console.log(`Chat with ID ${chatId} removed`);
       return chatId;
     } catch (err) {
       console.error('Error removing chat:', err.response?.data || err.message);
@@ -129,29 +138,23 @@ const chatsSlice = createSlice({
   reducers: {
     setSearchTerm: (state, action) => {
       state.searchTerm = action.payload;
-      console.log('Search term updated:', state.searchTerm);
     },
     setCurrentChatId: (state, action) => {
       state.currentChatId = action.payload;
-      console.log('Current chat ID set to:', state.currentChatId);
     },
     setMessages: (state, action) => {
       state.messages = action.payload;
-      console.log('Messages updated:', state.messages);
     },
     setCurrentChat: (state, action) => {
       const chat = state.chats.find((chat) => chat.id === action.payload);
       state.currentChat = chat || null;
-      console.log('Current chat set:', state.currentChat);
     },
     updateChats: (state, action) => {
       state.chats = [action.payload, ...state.chats];
       localStorage.setItem('chats', JSON.stringify(state.chats));
-      console.log('Chats updated:', state.chats);
     },
     removeChatFromState: (state, action) => {
       state.chats = state.chats.filter((chat) => chat.id !== action.payload);
-      console.log('Chat removed from state:', state.chats);
     },
   },
   extraReducers: (builder) => {
@@ -159,12 +162,10 @@ const chatsSlice = createSlice({
       .addCase(fetchChats.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        console.log('Fetching chats...');
       })
       .addCase(fetchChats.fulfilled, (state, action) => {
         state.isLoading = false;
         state.chats = action.payload;
-        console.log('Chats loaded:', state.chats);
       })
       .addCase(fetchChats.rejected, (state, action) => {
         state.isLoading = false;
@@ -174,14 +175,12 @@ const chatsSlice = createSlice({
       .addCase(selectChat.pending, (state) => {
         state.isLoading = true;
         state.error = null;
-        console.log('Selecting chat...');
       })
       .addCase(selectChat.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentChatId = action.payload.chatId;
         state.messages = action.payload.messages;
         state.currentChat = state.chats.find((chat) => chat.id === action.payload.chatId) || null;
-        console.log('Chat selected:', state.currentChatId);
       })
       .addCase(selectChat.rejected, (state, action) => {
         state.isLoading = false;
@@ -191,7 +190,6 @@ const chatsSlice = createSlice({
       .addCase(removeChat.fulfilled, (state, action) => {
         state.chats = state.chats.filter((chat) => chat.id !== action.payload);
         localStorage.setItem('chats', JSON.stringify(state.chats));
-        console.log('Chat deleted, updated chats:', state.chats);
       });
   },
 });

@@ -25,6 +25,16 @@ const useLoadAllMessages = (chatId) => {
     const loadMessages = async () => {
       setLoading(true);
       setError(null);
+
+      const storedMessages = localStorage.getItem(`messages_${chatId}`);
+      if (storedMessages) {
+        const parsedMessages = JSON.parse(storedMessages);
+        const groupedMessages = groupMessagesByDate(parsedMessages);
+        setAllMessages(groupedMessages);
+        setLoading(false);
+        return;
+      }
+
       let nextPage = 1;
       let hasMore = true;
       let messages = [];
@@ -39,6 +49,8 @@ const useLoadAllMessages = (chatId) => {
 
         const groupedMessages = groupMessagesByDate(messages);
         setAllMessages(groupedMessages);
+
+        localStorage.setItem(`messages_${chatId}`, JSON.stringify(messages));
       } catch (err) {
         setError(err.message || 'Ошибка загрузки сообщений');
       } finally {
