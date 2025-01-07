@@ -1,0 +1,70 @@
+.history-page {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 100vh;
+  text-align: center;
+  padding: 20px;
+  padding-top: 30px;
+}
+
+.history-page h1 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.history-page ul {
+  list-style: none;
+  padding: 10px;
+}
+
+.history-page__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-page__entry {
+  border-bottom: 1px solid #ddd;
+  padding: 15px 0;
+}
+
+.history-page__entry-item.translation {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.history-page__entry-item {
+  margin: 5px 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.history-page__entry-item.translation {
+  font-weight: bold;
+  color: #007bff;
+}
+
+.history-page__back-button {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  font-size: 18px;
+  background-color: transparent;
+  color: #007bff;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.history-page__back-button:hover {
+  background-color: #f0f0f0;
+  color: #0056b3;
+}
+
+.history-page__back-button .material-icons {
+  margin-right: 8px;
+}
