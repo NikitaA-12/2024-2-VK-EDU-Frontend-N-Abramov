@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { fetchChats } from '../store/chatsSlice';
 import { $api } from '../api/api';
+import { setAuthenticated, setUserDetails } from '../store/userSlice';
+
+const clearAuthData = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh');
+  localStorage.removeItem('isAuthenticated');
+};
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -22,13 +29,15 @@ const LoginPage = () => {
       localStorage.setItem('refresh', response.data.refresh);
       localStorage.setItem('isAuthenticated', 'true');
 
-      dispatch({ type: 'SET_AUTHENTICATED', payload: true });
+      dispatch(setAuthenticated(true));
+      dispatch(setUserDetails(response.data.user));
 
       await dispatch(fetchChats({ page: 1, pageSize: 10, searchTerm: '' }));
 
       navigate('/');
     } catch (error) {
       setError(error.response?.data?.detail || 'Login failed');
+      clearAuthData();
     } finally {
       setLoading(false);
     }

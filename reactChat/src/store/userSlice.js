@@ -84,6 +84,7 @@ export const fetchCurrentUser = createAsyncThunk(
 export const userSlice = createSlice({
   name: 'users',
   initialState: {
+    isAuthenticated: false,
     availableUsers: JSON.parse(localStorage.getItem('users')) || [],
     selectedUsers: [],
     currentUser: { id: null, username: '', avatar: null },
@@ -92,6 +93,10 @@ export const userSlice = createSlice({
     error: null,
   },
   reducers: {
+    setAuthenticated: (state, action) => {
+      state.isAuthenticated = action.payload;
+      console.log('Статус авторизации изменен:', state.isAuthenticated);
+    },
     setSelectedUsers: (state, action) => {
       state.selectedUsers = action.payload;
       console.log('Выбраны пользователи:', state.selectedUsers);
@@ -100,8 +105,14 @@ export const userSlice = createSlice({
       state.currentUser = action.payload;
       console.log('Текущий пользователь установлен:', state.currentUser);
     },
+    setUserDetails: (state, action) => {
+      state.currentUser = action.payload;
+      state.isAuthenticated = true;
+      console.log('Данные пользователя установлены:', state.currentUser);
+    },
     clearCurrentUser: (state) => {
       state.currentUser = { id: null, username: '', avatar: null };
+      state.isAuthenticated = false;
       console.log('Текущий пользователь очищен');
     },
   },
@@ -135,19 +146,28 @@ export const userSlice = createSlice({
         state.isLoading = false;
         state.isLoaded = true;
         state.currentUser = action.payload;
+        state.isAuthenticated = true;
         console.log('Текущий пользователь загружен:', state.currentUser);
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isLoaded = false;
         state.error = action.payload;
+        state.isAuthenticated = false;
         console.error('Ошибка при загрузке текущего пользователя:', state.error);
       });
   },
 });
 
-export const { setSelectedUsers, setCurrentUser, clearCurrentUser } = userSlice.actions;
+export const {
+  setAuthenticated,
+  setSelectedUsers,
+  setCurrentUser,
+  setUserDetails,
+  clearCurrentUser,
+} = userSlice.actions;
 
 export const selectCurrentUser = (state) => state.users.currentUser;
+export const selectIsAuthenticated = (state) => state.users.isAuthenticated;
 
 export default userSlice.reducer;

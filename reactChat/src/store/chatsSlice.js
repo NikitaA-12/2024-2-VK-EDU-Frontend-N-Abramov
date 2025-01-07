@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { $api } from '../api/api';
+import { useNavigate } from 'react-router-dom';
 
 export const fetchChats = createAsyncThunk(
   'chats/fetchChats',
@@ -35,6 +36,28 @@ export const fetchChats = createAsyncThunk(
       console.log('Fetched chats from API:', chatsWithLastMessage);
       return chatsWithLastMessage;
     } catch (err) {
+      if (err.response?.status === 401) {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (refreshToken) {
+          try {
+            const response = await $api.post('/auth/refresh/', { refresh_token: refreshToken });
+            const { token: newToken, refresh_token: newRefreshToken } = response.data;
+
+            localStorage.setItem('token', newToken);
+            localStorage.setItem('refresh_token', newRefreshToken);
+            return fetchChats({ page, pageSize, searchTerm });
+          } catch (refreshError) {
+            console.error(
+              'Refresh token error:',
+              refreshError.response?.data || refreshError.message,
+            );
+            localStorage.clear();
+            useNavigate('/login');
+            throw new Error('Токен истёк. Переход на страницу авторизации');
+          }
+        }
+      }
+
       console.error('Error fetching chats:', err.response?.data || err.message);
       return rejectWithValue(err.response?.data || err.message);
     }

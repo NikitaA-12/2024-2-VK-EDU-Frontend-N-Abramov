@@ -1,16 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { Navigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { setAuthenticated } from '../store/userSlice';
+import { checkAuthStatus, clearAuthData } from '../api/api';
 
 const ProtectedRoute = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const isAuthenticated = useSelector((state) => state.users.isAuthenticated);
+  const dispatch = useDispatch();
 
   useEffect(() => {
-    const authStatus = localStorage.getItem('isAuthenticated');
-    setIsAuthenticated(authStatus === 'true');
-  }, []);
+    const verifyAuth = async () => {
+      const isAuth = await checkAuthStatus();
 
-  if (isAuthenticated === null) {
+      if (isAuth) {
+        dispatch(setAuthenticated(true));
+      } else {
+        dispatch(setAuthenticated(false));
+        clearAuthData();
+      }
+
+      setIsCheckingAuth(false);
+    };
+
+    verifyAuth();
+  }, [dispatch]);
+
+  if (isCheckingAuth) {
     return <div>Loading...</div>;
   }
 

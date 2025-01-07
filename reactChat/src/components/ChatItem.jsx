@@ -1,4 +1,3 @@
-import React from 'react';
 import PropTypes from 'prop-types';
 import { IconButton } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -7,7 +6,7 @@ import { useDispatch } from 'react-redux';
 import { selectChat } from '../store/chatsSlice';
 import { format } from 'date-fns';
 
-const ChatItem = ({ chat, onClick, onDelete, isDeleting }) => {
+const ChatItem = ({ chat, onClick, onDelete, isDeleting = false }) => {
   const dispatch = useDispatch();
 
   const handleChatSelect = () => {
@@ -82,10 +81,6 @@ ChatItem.propTypes = {
   onClick: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   isDeleting: PropTypes.bool,
-};
-
-ChatItem.defaultProps = {
-  isDeleting: false,
 };
 
 export default ChatItem;
