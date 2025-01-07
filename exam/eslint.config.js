@@ -1,4 +1,3 @@
-<<<<<<< HEAD:translateModule/eslint.config.js
 import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
@@ -27,29 +26,3 @@ export default tseslint.config(
     },
   },
 )
-=======
-import globals from 'globals';
-import pluginJs from '@eslint/js';
-import pluginReact from 'eslint-plugin-react';
-
-/** @type {import('eslint').Linter.Config[]} */
-export default [
-  {
-    files: ['**/*.{js,mjs,cjs,jsx}'],
-  },
-  {
-    languageOptions: {
-      globals: globals.browser,
-    },
-  },
-  pluginJs.configs.recommended,
-  pluginReact.configs.flat.recommended,
-  {
-    settings: {
-      react: {
-        version: '18.3',
-      },
-    },
-  },
-];
->>>>>>> master:reactChat/eslint.config.js
