@@ -1,9 +1,14 @@
-import PropTypes from 'prop-types';
 import SearchBar from './SearchBar';
 import PermIdentityIcon from '@mui/icons-material/PermIdentity';
-import { Link } from 'react-router-dom';
 
-const Header = ({ searchTerm, setSearchTerm, onSearch }) => {
+interface HeaderProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  onSearch: () => void;
+  onProfileClick: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ searchTerm, setSearchTerm, onSearch, onProfileClick }) => {
   return (
     <header>
       <a href="#" className="logo">
@@ -14,18 +19,12 @@ const Header = ({ searchTerm, setSearchTerm, onSearch }) => {
           <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} onSearch={onSearch} />
         </div>
 
-        <Link to="/profile" className="profile-link">
-          <PermIdentityIcon className="profile-btn" />
-        </Link>
+        <button onClick={onProfileClick} className="profile-btn">
+          <PermIdentityIcon className="profile-btn-icon" />
+        </button>
       </div>
     </header>
   );
-};
-
-Header.propTypes = {
-  searchTerm: PropTypes.string.isRequired,
-  setSearchTerm: PropTypes.func.isRequired,
-  onSearch: PropTypes.func.isRequired,
 };
 
 export default Header;

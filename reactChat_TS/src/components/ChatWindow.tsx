@@ -1,28 +1,55 @@
-import { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
+import React, { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
-import { useDispatch, useSelector } from 'react-redux';
 import { sendMessage } from '../store/messagesSlice';
 import { selectCurrentChat, setCurrentChat } from '../store/chatsSlice';
 import { fetchCurrentUser, selectCurrentUser } from '../store/userSlice';
-import { useParams } from 'react-router-dom';
 import useLoadAllMessages from '../hooks/useLoadAllMessages';
 import LazyImage from './LazyImage';
+import { ThunkDispatch } from '@reduxjs/toolkit';
+import { RootState } from '../store/store';
+import { AnyAction } from 'redux';
 
-const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
-  const dispatch = useDispatch();
-  const { id: chatId } = useParams();
-  const currentChat = useSelector((state) => selectCurrentChat(state));
-  const currentUser = useSelector((state) => selectCurrentUser(state));
+interface Message {
+  id: string;
+  chatId: string;
+  text: string;
+  sender: {
+    id: string;
+    username: string;
+    avatar?: string;
+  };
+  created_at: string;
+}
+
+interface GroupedMessages {
+  [date: string]: Message[];
+}
+
+interface ChatWindowProps {
+  chatId: string;
+  onBackClick?: () => void;
+  onSendMessage?: (chatId: string, text: string) => void;
+  onDeleteChat?: () => void;
+}
+
+const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
+  const dispatch: ThunkDispatch<RootState, unknown, AnyAction> = useDispatch();
+  const { id: chatId } = useParams<{ id: string }>();
+  const currentChat = useSelector(selectCurrentChat);
+  const currentUser = useSelector(selectCurrentUser);
 
   const [inputMessage, setInputMessage] = useState('');
-  const [localMessages, setLocalMessages] = useState([]);
+  const [localMessages, setLocalMessages] = useState<Message[]>([]);
   const [scrollOnSend, setScrollOnSend] = useState(false);
 
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const initialScrollDone = useRef(false);
+
+  const { allMessages, loading, error } = useLoadAllMessages(chatId || '');
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
@@ -31,21 +58,17 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
   useEffect(() => {
     if (chatId && !currentChat) {
       dispatch(setCurrentChat(chatId));
-    } else {
-      console.log('Чат уже установлен или ID чата отсутствует');
     }
   }, [chatId, currentChat, dispatch]);
 
-  const { allMessages, loading, error } = useLoadAllMessages(chatId);
-
   useEffect(() => {
     if (allMessages && typeof allMessages === 'object') {
-      const messagesArray = Object.keys(allMessages).reduce((acc, date) => {
-        return acc.concat(allMessages[date]);
+      const messagesArray = Object.keys(allMessages).reduce<Message[]>((acc, date) => {
+        return acc.concat(allMessages[date] as Message[]);
       }, []);
 
       const sortedMessages = messagesArray.sort(
-        (a, b) => new Date(a.created_at) - new Date(b.created_at),
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
       );
 
       setLocalMessages(sortedMessages);
@@ -73,7 +96,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
     }
   };
 
-  const adjustTextareaHeight = (e) => {
+  const adjustTextareaHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const textarea = e.target || textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
@@ -88,16 +111,16 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !chatId) return;
+    if (!inputMessage.trim() || !chatId || !currentUser.id) return;
 
-    const tempMessage = {
+    const tempMessage: Message = {
       id: `temp-${Date.now()}`,
       chatId,
       text: inputMessage,
       sender: {
         id: currentUser.id,
         username: currentUser.username,
-        avatar: currentUser.avatar,
+        avatar: currentUser.avatar || undefined,
       },
       created_at: new Date().toISOString(),
     };
@@ -123,8 +146,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
         localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
         return updatedMessages;
       });
-    } catch (error) {
-      console.error('Ошибка отправки сообщения:', error.message);
+    } catch (error: any) {
       setLocalMessages((prevMessages) => {
         const updatedMessages = prevMessages.filter((msg) => msg.id !== tempMessage.id);
         localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
@@ -133,8 +155,8 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
     }
   };
 
-  const groupMessagesByDate = (messages) => {
-    return messages.reduce((acc, message) => {
+  const groupMessagesByDate = (messages: Message[]): GroupedMessages => {
+    return messages.reduce<GroupedMessages>((acc, message) => {
       const messageDate = new Date(message.created_at).toLocaleDateString();
       if (!acc[messageDate]) {
         acc[messageDate] = [];
@@ -194,13 +216,6 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
                       className="avatar"
                     />
                   )}
-                  {isOutgoing && msg.sender?.avatar && (
-                    <LazyImage
-                      src={msg.sender.avatar}
-                      alt={`${msg.sender.username}'s avatar`}
-                      className="avatar"
-                    />
-                  )}
                   <div className="message-content">
                     <span className="username">{msg.sender?.username}</span>
                     <div
@@ -228,7 +243,7 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
         <textarea
           id="messageInput"
           placeholder="Введите сообщение..."
-          rows="1"
+          rows={1}
           ref={textareaRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
@@ -246,10 +261,6 @@ const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not p
       </div>
     </div>
   );
-};
-
-ChatWindow.propTypes = {
-  onBackClick: PropTypes.func,
 };
 
 export default ChatWindow;

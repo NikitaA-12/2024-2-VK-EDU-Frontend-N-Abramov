@@ -1,25 +1,37 @@
-import { useState, useEffect, useMemo } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useEffect, useMemo, ChangeEvent, KeyboardEvent } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { createChat } from '../store/chatCreationSlice';
 import { fetchUsers, setSelectedUsers } from '../store/userSlice';
+import { AppDispatch } from '../store/store';
 
-const Modal = ({ isOpen, onClose }) => {
-  const [chatName, setChatName] = useState('');
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
+interface User {
+  id: string;
+  username: string;
+}
 
-  const dispatch = useDispatch();
-  const { availableUsers, selectedUsers, isLoading } = useSelector((state) => state.users);
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onCreate: (title: string, isPrivate: boolean) => Promise<void>;
+  chatName: string;
+  setChatName: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const Modal = ({ isOpen, onClose, chatName, setChatName }: ModalProps) => {
+  const [isPrivate, setIsPrivate] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const dispatch = useDispatch<AppDispatch>();
+  const { availableUsers, selectedUsers, isLoading } = useSelector((state: any) => state.users);
 
   useEffect(() => {
     if (isOpen && availableUsers.length === 0) {
-      dispatch(fetchUsers({ userPageSize: 20 }));
+      dispatch(fetchUsers({ userPageSize: 20 }) as any);
     }
   }, [isOpen, availableUsers.length, dispatch]);
 
-  const validateChatName = (name) => {
+  const validateChatName = (name: string): string => {
     if (name.trim().length < 3) {
       return 'Название чата должно содержать не менее 3 символов.';
     }
@@ -29,7 +41,7 @@ const Modal = ({ isOpen, onClose }) => {
     return '';
   };
 
-  const handleCreateChat = async () => {
+  const handleCreateChat = async (): Promise<void> => {
     const trimmedName = chatName.trim();
     const validationError = validateChatName(trimmedName);
 
@@ -51,32 +63,33 @@ const Modal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleCreateChat();
     }
   };
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = (e: ChangeEvent<HTMLInputElement>): void => {
     setSearchQuery(e.target.value.toLowerCase());
   };
 
-  const handleCheckboxChange = (userId, isChecked) => {
+  const handleCheckboxChange = (userId: string, isChecked: boolean): void => {
     const updatedSelectedUsers = isChecked
       ? [...selectedUsers, userId]
-      : selectedUsers.filter((id) => id !== userId);
+      : selectedUsers.filter((id: string) => id !== userId);
     dispatch(setSelectedUsers(updatedSelectedUsers));
   };
 
   const filteredUsers = useMemo(() => {
-    return availableUsers.filter((user) => user.username.toLowerCase().includes(searchQuery));
+    return availableUsers.filter((user: User) => user.username.toLowerCase().includes(searchQuery));
   }, [availableUsers, searchQuery]);
 
-  const handleScroll = (e) => {
-    const bottom = e.target.scrollHeight === e.target.scrollTop + e.target.clientHeight;
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>): void => {
+    const target = e.target as HTMLDivElement;
+    const bottom = target.scrollHeight === target.scrollTop + target.clientHeight;
     if (bottom && availableUsers.length % 20 === 0) {
-      dispatch(fetchUsers({ userPageSize: 20 }));
+      dispatch(fetchUsers({ userPageSize: 20 }) as any);
     }
   };
 
@@ -130,7 +143,7 @@ const Modal = ({ isOpen, onClose }) => {
           {isLoading ? (
             <p>Загрузка пользователей...</p>
           ) : (
-            filteredUsers.map((user) => (
+            filteredUsers.map((user: User) => (
               <div
                 key={user.id}
                 className={`user-row ${selectedUsers.includes(user.id) ? 'selected' : ''}`}>
@@ -159,11 +172,6 @@ const Modal = ({ isOpen, onClose }) => {
       </div>
     </div>
   );
-};
-
-Modal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
 };
 
 export default Modal;

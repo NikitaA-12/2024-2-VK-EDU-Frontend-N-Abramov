@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/api';
+import { api } from '../api/api';
 
 const RegisterPage = () => {
-  const [username, setUsername] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [bio, setBio] = useState('');
-  const [password, setPassword] = useState('');
-  const [avatar, setAvatar] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState<string>('');
+  const [firstName, setFirstName] = useState<string>('');
+  const [lastName, setLastName] = useState<string>('');
+  const [bio, setBio] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [avatar, setAvatar] = useState<File | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const navigate = useNavigate();
 
   const handleRegister = async () => {
@@ -37,14 +37,13 @@ const RegisterPage = () => {
       formData.append('bio', bio);
       formData.append('password', password);
       if (avatar) formData.append('avatar', avatar);
+
       const apiInstance = api.getApiInstance();
       const response = await apiInstance.post('/register/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
-
-      console.log('Response:', response.data);
 
       if (response.data && response.data.access && response.data.refresh) {
         localStorage.setItem('token', response.data.access);
@@ -55,11 +54,16 @@ const RegisterPage = () => {
       }
 
       navigate('/');
-    } catch (error) {
-      console.error('Error:', error.response ? error.response.data : error.message);
+    } catch (error: any) {
       setError(error.response?.data?.detail || 'Registration failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAvatarChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setAvatar(e.target.files[0]);
     }
   };
 
@@ -92,7 +96,7 @@ const RegisterPage = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
-      <input type="file" placeholder="Avatar" onChange={(e) => setAvatar(e.target.files[0])} />
+      <input type="file" placeholder="Avatar" onChange={handleAvatarChange} />
       <button onClick={handleRegister} disabled={loading}>
         {loading ? 'Registering...' : 'Register'}
       </button>

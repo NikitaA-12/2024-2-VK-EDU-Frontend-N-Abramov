@@ -1,35 +1,46 @@
-import { useState, useEffect, useRef } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useEffect, useRef, ChangeEvent, FocusEvent } from 'react';
 import SearchIcon from '@mui/icons-material/Search';
 
-const SearchBar = ({ searchTerm, setSearchTerm }) => {
-  const [isActive, setIsActive] = useState(false);
-  const searchRef = useRef(null);
+interface SearchBarProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  onSearch: () => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ searchTerm, setSearchTerm, onSearch }) => {
+  const [isActive, setIsActive] = useState<boolean>(false);
+  const searchRef = useRef<HTMLDivElement | null>(null);
 
   const toggleSearch = () => {
     setIsActive(true);
   };
 
-  const handleInputChange = (event) => {
+  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
   };
 
-  const handleBlur = () => {
+  const handleBlur = (event: FocusEvent<HTMLInputElement>) => {
     if (searchTerm === '') {
       setIsActive(false);
     }
   };
 
-  const handleClickOutside = (event) => {
-    if (searchRef.current && !searchRef.current.contains(event.target)) {
+  const handleClickOutside = (event: MouseEvent) => {
+    if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
       setIsActive(false);
     }
   };
 
+  const handleSearch = () => {
+    onSearch();
+  };
+
   useEffect(() => {
-    document.addEventListener('mousedown', handleClickOutside);
+    const handleClickOutsideTyped = (event: MouseEvent) => handleClickOutside(event);
+    document.addEventListener('mousedown', handleClickOutsideTyped);
+
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutsideTyped);
     };
   }, []);
 
@@ -50,14 +61,10 @@ const SearchBar = ({ searchTerm, setSearchTerm }) => {
         onChange={handleInputChange}
         onFocus={() => setIsActive(true)}
         onBlur={handleBlur}
+        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
       />
     </div>
   );
-};
-
-SearchBar.propTypes = {
-  searchTerm: PropTypes.string.isRequired,
-  setSearchTerm: PropTypes.func.isRequired,
 };
 
 export default SearchBar;
