@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { $api } from '../api/api';
+import api from '../api/api';
 
 const RegisterPage = () => {
   const [username, setUsername] = useState('');
@@ -37,8 +37,8 @@ const RegisterPage = () => {
       formData.append('bio', bio);
       formData.append('password', password);
       if (avatar) formData.append('avatar', avatar);
-
-      const response = await $api.post('/register/', formData, {
+      const apiInstance = api.getApiInstance();
+      const response = await apiInstance.post('/register/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
