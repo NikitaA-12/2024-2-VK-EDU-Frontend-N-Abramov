@@ -31,8 +31,6 @@ interface GroupedMessages {
 interface ChatWindowProps {
   chatId: string;
   onBackClick?: () => void;
-  onSendMessage?: (chatId: string, text: string) => void;
-  onDeleteChat?: () => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
@@ -52,8 +50,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   const { allMessages, loading, error } = useLoadAllMessages(chatId || '');
 
   useEffect(() => {
-    dispatch(fetchCurrentUser());
-  }, [dispatch]);
+    if (!currentUser) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, currentUser]);
 
   useEffect(() => {
     if (chatId && !currentChat) {
@@ -111,7 +111,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !chatId || !currentUser.id) return;
+    if (!inputMessage.trim() || !chatId || !currentUser?.id) return;
 
     const tempMessage: Message = {
       id: `temp-${Date.now()}`,
@@ -132,7 +132,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
     });
 
     setScrollOnSend(true);
-
     setInputMessage('');
     resetTextareaHeight();
 
@@ -167,6 +166,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   };
 
   const groupedMessages = groupMessagesByDate(localMessages);
+
+  if (!currentUser) {
+    return <div>Загрузка пользователя...</div>;
+  }
 
   return (
     <div className="chatBox">
@@ -206,7 +209,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
           <div key={date}>
             <div className="date-divider">{date}</div>
             {groupedMessages[date].map((msg) => {
-              const isOutgoing = msg.sender?.id === currentUser.id;
+              const isOutgoing = msg.sender?.id === currentUser?.id;
               return (
                 <div key={msg.id} className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
                   {!isOutgoing && msg.sender?.avatar && (
