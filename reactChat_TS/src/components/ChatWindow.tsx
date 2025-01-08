@@ -1,55 +1,28 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SendIcon from '@mui/icons-material/Send';
+import { useDispatch, useSelector } from 'react-redux';
 import { sendMessage } from '../store/messagesSlice';
 import { selectCurrentChat, setCurrentChat } from '../store/chatsSlice';
 import { fetchCurrentUser, selectCurrentUser } from '../store/userSlice';
+import { useParams } from 'react-router-dom';
 import useLoadAllMessages from '../hooks/useLoadAllMessages';
 import LazyImage from './LazyImage';
-import { ThunkDispatch } from '@reduxjs/toolkit';
-import { RootState } from '../store/store';
-import { AnyAction } from 'redux';
 
-interface Message {
-  id: string;
-  chatId: string;
-  text: string;
-  sender: {
-    id: string;
-    username: string;
-    avatar?: string;
-  };
-  created_at: string;
-}
-
-interface GroupedMessages {
-  [date: string]: Message[];
-}
-
-interface ChatWindowProps {
-  chatId: string;
-  onBackClick?: () => void;
-  onSendMessage?: (chatId: string, text: string) => void;
-  onDeleteChat?: () => void;
-}
-
-const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
-  const dispatch: ThunkDispatch<RootState, unknown, AnyAction> = useDispatch();
-  const { id: chatId } = useParams<{ id: string }>();
-  const currentChat = useSelector(selectCurrentChat);
-  const currentUser = useSelector(selectCurrentUser);
+const ChatWindow = ({ onBackClick = () => console.warn('Back click handler not provided') }) => {
+  const dispatch = useDispatch();
+  const { id: chatId } = useParams();
+  const currentChat = useSelector((state) => selectCurrentChat(state));
+  const currentUser = useSelector((state) => selectCurrentUser(state));
 
   const [inputMessage, setInputMessage] = useState('');
-  const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [localMessages, setLocalMessages] = useState([]);
   const [scrollOnSend, setScrollOnSend] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesEndRef = useRef(null);
+  const textareaRef = useRef(null);
   const initialScrollDone = useRef(false);
-
-  const { allMessages, loading, error } = useLoadAllMessages(chatId || '');
 
   useEffect(() => {
     dispatch(fetchCurrentUser());
@@ -58,17 +31,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   useEffect(() => {
     if (chatId && !currentChat) {
       dispatch(setCurrentChat(chatId));
+    } else {
+      console.log('Чат уже установлен или ID чата отсутствует');
     }
   }, [chatId, currentChat, dispatch]);
 
+  const { allMessages, loading, error } = useLoadAllMessages(chatId);
+
   useEffect(() => {
     if (allMessages && typeof allMessages === 'object') {
-      const messagesArray = Object.keys(allMessages).reduce<Message[]>((acc, date) => {
-        return acc.concat(allMessages[date] as Message[]);
+      const messagesArray = Object.keys(allMessages).reduce((acc, date) => {
+        return acc.concat(allMessages[date]);
       }, []);
 
       const sortedMessages = messagesArray.sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        (a, b) => new Date(a.created_at) - new Date(b.created_at),
       );
 
       setLocalMessages(sortedMessages);
@@ -96,7 +73,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
     }
   };
 
-  const adjustTextareaHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const adjustTextareaHeight = (e) => {
     const textarea = e.target || textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
@@ -111,16 +88,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || !chatId || !currentUser.id) return;
+    if (!inputMessage.trim() || !chatId) return;
 
-    const tempMessage: Message = {
+    const tempMessage = {
       id: `temp-${Date.now()}`,
       chatId,
       text: inputMessage,
       sender: {
         id: currentUser.id,
         username: currentUser.username,
-        avatar: currentUser.avatar || undefined,
+        avatar: currentUser.avatar,
       },
       created_at: new Date().toISOString(),
     };
@@ -146,7 +123,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
         localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
         return updatedMessages;
       });
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Ошибка отправки сообщения:', error.message);
       setLocalMessages((prevMessages) => {
         const updatedMessages = prevMessages.filter((msg) => msg.id !== tempMessage.id);
         localStorage.setItem(`messages_${chatId}`, JSON.stringify(updatedMessages));
@@ -155,8 +133,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
     }
   };
 
-  const groupMessagesByDate = (messages: Message[]): GroupedMessages => {
-    return messages.reduce<GroupedMessages>((acc, message) => {
+  const groupMessagesByDate = (messages) => {
+    return messages.reduce((acc, message) => {
       const messageDate = new Date(message.created_at).toLocaleDateString();
       if (!acc[messageDate]) {
         acc[messageDate] = [];
@@ -216,6 +194,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
                       className="avatar"
                     />
                   )}
+                  {isOutgoing && msg.sender?.avatar && (
+                    <LazyImage
+                      src={msg.sender.avatar}
+                      alt={`${msg.sender.username}'s avatar`}
+                      className="avatar"
+                    />
+                  )}
                   <div className="message-content">
                     <span className="username">{msg.sender?.username}</span>
                     <div
@@ -243,7 +228,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
         <textarea
           id="messageInput"
           placeholder="Введите сообщение..."
-          rows={1}
+          rows="1"
           ref={textareaRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
@@ -261,6 +246,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
       </div>
     </div>
   );
+};
+
+ChatWindow.propTypes = {
+  onBackClick: PropTypes.func,
 };
 
 export default ChatWindow;

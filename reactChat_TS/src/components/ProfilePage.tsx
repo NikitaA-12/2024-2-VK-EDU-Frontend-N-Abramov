@@ -1,45 +1,24 @@
-import { useState, useEffect, ChangeEvent } from 'react';
-import { NavigateFunction } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
+import { useNavigate } from 'react-router-dom';
 import CheckIcon from '@mui/icons-material/Check';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { api } from '../api/api';
+import { $api } from '../api/api';
 import LazyImage from './LazyImage';
 
-interface ProfileData {
-  avatar: string | null;
-  username: string;
-  first_name: string;
-  last_name: string;
-  bio: string;
-}
-
-interface User {
-  id: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  bio: string;
-  avatar: string | null;
-}
-
-interface ProfilePageProps {
-  availableUsers: User[];
-  navigate: NavigateFunction;
-}
-
-const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
-  const [avatar, setAvatar] = useState<File | string | null>(null);
-  const [fullName, setFullName] = useState<string>('');
-  const [username, setUsername] = useState<string>('');
-  const [bio, setBio] = useState<string>('');
-  const [error, setError] = useState<string>('');
+const ProfilePage = () => {
+  const navigate = useNavigate();
+  const [avatar, setAvatar] = useState(null);
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const loadProfile = () => {
       const profileData = localStorage.getItem('profile');
       if (profileData) {
-        const { avatar, username, first_name, last_name, bio }: ProfileData =
-          JSON.parse(profileData);
+        const { avatar, username, first_name, last_name, bio } = JSON.parse(profileData);
         setAvatar(avatar || null);
         setUsername(username || '');
         setFullName(`${first_name || ''} ${last_name || ''}`.trim());
@@ -52,20 +31,16 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('Token is missing');
+        console.error('Token is missing');
         return;
       }
 
       try {
-        const apiInstance = api.getApiInstance();
-        const response = await apiInstance.get(
-          'https://vkedu-fullstack-div2.ru/api/user/current/',
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const response = await $api.get('https://vkedu-fullstack-div2.ru/api/user/current/', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const { avatar, username, first_name, last_name, bio }: ProfileData = response.data;
+        const { avatar, username, first_name, last_name, bio } = response.data;
 
         setAvatar(avatar || null);
         setUsername(username || '');
@@ -73,7 +48,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
         setBio(bio || '');
 
         localStorage.setItem('profile', JSON.stringify(response.data));
-      } catch (err: any) {
+      } catch (error) {
+        console.error('Error fetching profile:', error.response?.data || error.message);
         setError('Failed to load profile. Please try again later.');
       }
     };
@@ -111,8 +87,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
         return;
       }
 
-      const apiInstance = api.getApiInstance();
-      const response = await apiInstance.patch(
+      const response = await $api.patch(
         'https://vkedu-fullstack-div2.ru/api/user/current/',
         formData,
         {
@@ -123,9 +98,11 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
         },
       );
 
+      console.log('Profile updated:', response.data);
       localStorage.setItem('profile', JSON.stringify(response.data));
       navigate('/');
-    } catch (err: any) {
+    } catch (error) {
+      console.error('Error saving profile:', error.response?.data || error.message);
       setError('Failed to save profile. Please try again later.');
     }
   };
@@ -134,8 +111,8 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
     navigate('/');
   };
 
-  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files ? event.target.files[0] : null;
+  const handleAvatarChange = (event) => {
+    const file = event.target.files[0];
     if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
       setAvatar(file);
     } else {
@@ -144,7 +121,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
   };
 
   const handleAvatarContainerClick = () => {
-    document.getElementById('avatar-upload')?.click();
+    document.getElementById('avatar-upload').click();
   };
 
   const handleLogout = () => {
@@ -173,7 +150,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
             avatar instanceof File ? (
               <LazyImage src={URL.createObjectURL(avatar)} alt="User Avatar" className="avatar" />
             ) : (
-              <LazyImage src={avatar as string} alt="User Avatar" className="avatar" />
+              <LazyImage src={avatar} alt="User Avatar" className="avatar" />
             )
           ) : (
             <div className="avatar-placeholder">+</div>
@@ -222,6 +199,10 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ navigate }) => {
       </button>
     </div>
   );
+};
+
+ProfilePage.propTypes = {
+  navigate: PropTypes.func.isRequired,
 };
 
 export default ProfilePage;
