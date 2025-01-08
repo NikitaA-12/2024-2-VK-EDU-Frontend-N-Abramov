@@ -10,24 +10,13 @@ jobs:
         with:
           node-version: 16
       - name: Install npm deps
-<<<<<<< HEAD
-        working-directory: ./reactChat_TS
+        working-directory: ./reactChat
         run: npm i
       - name: Build app
-        working-directory: ./reactChat_TS
-=======
-        working-directory: ./translateModule
-        run: npm i
-      - name: Build app
-        working-directory: ./translateModule
->>>>>>> master
+        working-directory: ./reactChat
         run: npm run build
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-<<<<<<< HEAD
-          publish_dir: ./reactChat_TS/dist
-=======
-          publish_dir: ./translateModule/dist
->>>>>>> master
+          publish_dir: ./reactChat/dist
