@@ -1,7 +1,6 @@
 import axios from 'axios';
 import { Centrifuge } from 'centrifuge';
 
-// Базовая настройка Axios
 const $api = axios.create({
   baseURL: 'https://vkedu-fullstack-div2.ru/api/',
   headers: {
@@ -9,7 +8,50 @@ const $api = axios.create({
   },
 });
 
-// Интерсепторы для обработки запросов и ответов
+const clearAuthData = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh');
+  localStorage.removeItem('isAuthenticated');
+};
+
+const refreshAuthToken = async (refreshToken) => {
+  try {
+    const response = await axios.post(`${$api.defaults.baseURL}/auth/refresh/`, {
+      refresh: refreshToken,
+    });
+    localStorage.setItem('token', response.data.access);
+    return response.data.access;
+  } catch (error) {
+    console.error('Refresh token expired or invalid:', error.message);
+    clearAuthData();
+    throw error;
+  }
+};
+
+const getAuthData = () => {
+  return {
+    token: localStorage.getItem('token'),
+    refreshToken: localStorage.getItem('refresh'),
+  };
+};
+
+const checkAuthStatus = async () => {
+  const { token, refreshToken } = getAuthData();
+
+  if (token) {
+    return true;
+  } else if (refreshToken) {
+    try {
+      await refreshAuthToken(refreshToken);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+};
+
 $api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -26,10 +68,30 @@ $api.interceptors.request.use(
 
 $api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
+
     if (status === 401) {
-      console.warn('Unauthorized: токен истёк или отсутствует.');
+      const refreshToken = localStorage.getItem('refresh');
+
+      if (refreshToken) {
+        try {
+          const response = await axios.post(`${$api.defaults.baseURL}/auth/refresh/`, {
+            refresh: refreshToken,
+          });
+          localStorage.setItem('token', response.data.access);
+          error.config.headers.Authorization = `Bearer ${response.data.access}`;
+          return $api.request(error.config);
+        } catch (refreshError) {
+          console.error('Refresh token expired or invalid:', refreshError.message);
+          clearAuthData();
+          window.location.href = '/#/login';
+        }
+      } else {
+        console.warn('No refresh token found. Redirecting to login.');
+        clearAuthData();
+        window.location.href = '/#/login';
+      }
     } else if (status >= 500) {
       console.error('Server error:', error.response?.data || error.message);
     } else if (status === 404) {
@@ -41,7 +103,6 @@ $api.interceptors.response.use(
   },
 );
 
-// WebSocket с использованием Centrifuge
 const initAndStartCentrifugo = (chatId, onMessage) => {
   const centrifuge = new Centrifuge('wss://vkedu-fullstack-div2.ru/connection/websocket/');
   centrifuge.connect();
@@ -63,7 +124,6 @@ const initAndStartCentrifugo = (chatId, onMessage) => {
   return { centrifuge, subscription };
 };
 
-// Создание чата
 const createChat = async (chatName) => {
   try {
     const response = await $api.post('/chats/', { title: chatName.trim() });
@@ -74,7 +134,6 @@ const createChat = async (chatName) => {
   }
 };
 
-// Удаление чата
 const deleteChat = async (chatId) => {
   try {
     console.log(`Attempting to delete chat with ID: ${chatId}`);
@@ -90,7 +149,6 @@ const deleteChat = async (chatId) => {
   }
 };
 
-// Отправка сообщений в чат
 const sendMessage = async (chatId, messageText) => {
   try {
     const response = await $api.post('/message/', {
@@ -104,7 +162,6 @@ const sendMessage = async (chatId, messageText) => {
   }
 };
 
-// Получение списка пользователей
 export const fetchUsers = async ({ search = '', page = 1, page_size = 10 }) => {
   try {
     const response = await $api.get('/users/', {
@@ -121,7 +178,6 @@ export const fetchUsers = async ({ search = '', page = 1, page_size = 10 }) => {
   }
 };
 
-// Получение сообщений из чата
 const fetchMessages = async (chatId) => {
   try {
     const response = await $api.get(`/messages/?chat=${chatId}`);
@@ -144,7 +200,6 @@ const fetchMessages = async (chatId) => {
   }
 };
 
-// Получение списка чатов
 const fetchChats = async () => {
   try {
     const response = await $api.get('/chats/');
@@ -155,7 +210,6 @@ const fetchChats = async () => {
   }
 };
 
-// Создание токена отмены запроса
 const createCancelToken = () => {
   const source = axios.CancelToken.source();
   return source;
@@ -171,4 +225,7 @@ export {
   fetchChats,
   deleteChat,
   createCancelToken,
+  checkAuthStatus,
+  refreshAuthToken,
+  clearAuthData,
 };

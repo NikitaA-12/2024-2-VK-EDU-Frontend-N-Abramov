@@ -30,8 +30,6 @@ export const fetchUsers = createAsyncThunk(
           params: { page: currentPage, page_size: userPageSize },
         });
 
-        console.log(`Загружаем пользователей, страница ${currentPage}`, response.data.results);
-
         allUsers = [...allUsers, ...response.data.results];
 
         if (response.data.next) {
@@ -44,7 +42,6 @@ export const fetchUsers = createAsyncThunk(
       localStorage.setItem('users', JSON.stringify(allUsers));
       localStorage.setItem('usersLastFetched', currentTime.toString());
 
-      console.log('Пользователи загружены успешно:', allUsers);
       return allUsers;
     } catch (err) {
       console.error('Ошибка при загрузке пользователей:', err.message);
@@ -72,7 +69,6 @@ export const fetchCurrentUser = createAsyncThunk(
         throw new Error('Не удалось загрузить данные о текущем пользователе');
       }
 
-      console.log('Загружен текущий пользователь:', response.data);
       return response.data;
     } catch (err) {
       console.error('Ошибка при загрузке текущего пользователя:', err.message);
@@ -84,6 +80,7 @@ export const fetchCurrentUser = createAsyncThunk(
 export const userSlice = createSlice({
   name: 'users',
   initialState: {
+    isAuthenticated: false,
     availableUsers: JSON.parse(localStorage.getItem('users')) || [],
     selectedUsers: [],
     currentUser: { id: null, username: '', avatar: null },
@@ -92,17 +89,22 @@ export const userSlice = createSlice({
     error: null,
   },
   reducers: {
+    setAuthenticated: (state, action) => {
+      state.isAuthenticated = action.payload;
+    },
     setSelectedUsers: (state, action) => {
       state.selectedUsers = action.payload;
-      console.log('Выбраны пользователи:', state.selectedUsers);
     },
     setCurrentUser: (state, action) => {
       state.currentUser = action.payload;
-      console.log('Текущий пользователь установлен:', state.currentUser);
+    },
+    setUserDetails: (state, action) => {
+      state.currentUser = action.payload;
+      state.isAuthenticated = true;
     },
     clearCurrentUser: (state) => {
       state.currentUser = { id: null, username: '', avatar: null };
-      console.log('Текущий пользователь очищен');
+      state.isAuthenticated = false;
     },
   },
   extraReducers: (builder) => {
@@ -111,13 +113,11 @@ export const userSlice = createSlice({
         state.isLoading = true;
         state.isLoaded = false;
         state.error = null;
-        console.log('Загрузка пользователей в процессе...');
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isLoaded = true;
         state.availableUsers = action.payload;
-        console.log('Пользователи загружены:', state.availableUsers);
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;
@@ -129,25 +129,32 @@ export const userSlice = createSlice({
         state.isLoading = true;
         state.isLoaded = false;
         state.error = null;
-        console.log('Загрузка текущего пользователя...');
       })
       .addCase(fetchCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isLoaded = true;
         state.currentUser = action.payload;
-        console.log('Текущий пользователь загружен:', state.currentUser);
+        state.isAuthenticated = true;
       })
       .addCase(fetchCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isLoaded = false;
         state.error = action.payload;
+        state.isAuthenticated = false;
         console.error('Ошибка при загрузке текущего пользователя:', state.error);
       });
   },
 });
 
-export const { setSelectedUsers, setCurrentUser, clearCurrentUser } = userSlice.actions;
+export const {
+  setAuthenticated,
+  setSelectedUsers,
+  setCurrentUser,
+  setUserDetails,
+  clearCurrentUser,
+} = userSlice.actions;
 
 export const selectCurrentUser = (state) => state.users.currentUser;
+export const selectIsAuthenticated = (state) => state.users.isAuthenticated;
 
 export default userSlice.reducer;
