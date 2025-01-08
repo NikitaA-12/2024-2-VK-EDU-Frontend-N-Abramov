@@ -31,6 +31,8 @@ interface GroupedMessages {
 interface ChatWindowProps {
   chatId: string;
   onBackClick?: () => void;
+  onSendMessage?: (chatId: string, text: string) => void;
+  onDeleteChat?: () => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
@@ -50,10 +52,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   const { allMessages, loading, error } = useLoadAllMessages(chatId || '');
 
   useEffect(() => {
-    if (!currentUser) {
-      dispatch(fetchCurrentUser());
-    }
-  }, [dispatch, currentUser]);
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
 
   useEffect(() => {
     if (chatId && !currentChat) {
@@ -132,6 +132,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
     });
 
     setScrollOnSend(true);
+
     setInputMessage('');
     resetTextareaHeight();
 
@@ -166,10 +167,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
   };
 
   const groupedMessages = groupMessagesByDate(localMessages);
-
-  if (!currentUser) {
-    return <div>Загрузка пользователя...</div>;
-  }
 
   return (
     <div className="chatBox">
@@ -212,7 +209,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ onBackClick = () => {} }) => {
               const isOutgoing = msg.sender?.id === currentUser?.id;
               return (
                 <div key={msg.id} className={`message ${isOutgoing ? 'outgoing' : 'incoming'}`}>
-                  {!isOutgoing && msg.sender?.avatar && (
+                  {msg.sender?.avatar && (
                     <LazyImage
                       src={msg.sender.avatar}
                       alt={`${msg.sender.username}'s avatar`}
